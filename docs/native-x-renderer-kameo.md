@@ -323,14 +323,12 @@ path from the first run (`kameo_055`), at 60 FPS. The first level needed two lib
 | What | Result |
 |---|---|
 | The scene's clear | Kameo clears its scene with `Clear(1, &rect, 0x3F, ...)`, the rectangle being the target's own 1280×720; the library skipped any clear with a rectangle, so the depth kept the previous frame's values, the geometry failed the depth test and an orange, sky-like gradient covered the screen. Library D78: a rectangle that covers the target clears it whole (`kameo_057`). |
-| Light glows | The glow of each light (the torches) is drawn by the count of an occlusion query around a quad that writes no color, depth always, no alpha test (`sub_823550D8`). The SDK turns that depth test off, the draw had no target and was skipped, and every count was 0: no glow, on the Xenos path too. Library D79: inside a query the test is kept; the counts are 25-49 samples per glow at the traced spot and the torches glow (`kameo_060`). |
+| Light glows | The glow of each light (the torches) is drawn by the count of an occlusion query around a quad that writes no color, depth always, no alpha test (`sub_823550D8`). The SDK turns that depth test off, the draw had no target and was skipped, and every count was 0: no glow, on the Xenos path too. Library D79: inside a query the test is kept; the counts are 25-49 samples per glow at the traced spot and the torches glow (`kameo_060`). The Xenos path got the same fix in shared SDK patch 0026 (its pipeline caches also drop that test, so the draw gets a stencil test that always passes and keeps instead): 17-69 samples per glow on D3D12 and Vulkan, the torches glow there too. |
 | Speed | 60 FPS. The overlay at the first level: the GPU at 18 % and about 50 W with NativeXRenderer, 67 % and about 143 W on the Xenos path (D3D12, 1280×720, the same spot); NativeXRenderer's GPU time 0.64 ms a frame on average. |
 | Draws | 3,849 of 3,850 drawn in the level (1 without targets); 0 textures in unsupported formats; 234 shaders, 245 pipelines. |
 
 ## 9. Open
 
-- **The Xenos path's glows**: the SDK's backends skip the glows' query draws the same way (D79), so the torches do not
-  glow there either; a shared SDK patch would fix it for the Xenos path.
 - **More of the game**: only the first level's start, the menus and two videos have been seen with NativeXRenderer.
 - **The tessellated draw** `sub_820CF228` (one engine site, `sub_820E58C8`, chosen per object): no call of its own in
   the library and no tessellation in NativeXRenderer; not seen at the traced spots.

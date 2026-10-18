@@ -1,0 +1,88 @@
+From 5e4ffadb73d026eb71006ca93264eba801ba9948 Mon Sep 17 00:00:00 2001
+From: Gustavo Garcia <44309076+ElGuslml@users.noreply.github.com>
+Date: Sun, 18 Oct 2026 16:42:46 -0600
+Subject: [PATCH 26/26] gpu: count the samples of always-pass draws inside
+ occlusion queries
+
+GetNormalizedDepthControl turns off a depth test that always passes
+without writing, and the D3D12 and Vulkan pipeline caches do the same
+when they choose the depth-stencil state, so that such a draw needs no
+depth render target. A draw that then writes no color has nothing bound:
+inside a host occlusion query none of its samples is counted. The guest
+GPU rasterizes it and counts them.
+
+Kameo: Elements of Power draws each light's glow by the count of a query
+around a quad with no color writes, depth always passing, no depth
+writes and the alpha test off: it measures how much of the glow is on
+screen. Every count was 0, and the torches never glowed.
+
+While the guest's occlusion query is open (guest_occlusion_query_open_,
+from patch 0020), the D3D12 and Vulkan command processors give such a
+draw a stencil test that always passes and keeps every value: the
+depth-stencil target is bound and the draw rasterizes into it, writing
+nothing, and its samples are counted (17-69 per glow at the first
+level's start, D3D12 and Vulkan; the torches glow). Draws outside a
+query are unchanged, and so is a draw inside one whose depth test is off
+in the registers or that already tests stencil.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/graphics/d3d12/command_processor.cpp  | 15 +++++++++++++++
+ src/graphics/vulkan/command_processor.cpp | 15 +++++++++++++++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/src/graphics/d3d12/command_processor.cpp b/src/graphics/d3d12/command_processor.cpp
+index ad62c25..30f9209 100644
+--- a/src/graphics/d3d12/command_processor.cpp
++++ b/src/graphics/d3d12/command_processor.cpp
+@@ -2345,6 +2345,21 @@ bool D3D12CommandProcessor::IssueDraw(xenos::PrimitiveType primitive_type, uint3
+   }
+ 
+   reg::RB_DEPTHCONTROL normalized_depth_control = draw_util::GetNormalizedDepthControl(regs);
++  // Inside a guest occlusion query, a draw whose depth test always passes without writing must still
++  // be counted. The normalization (and the pipeline cache's) turns that test off, and a draw that
++  // then writes no color has nothing bound: the host query counts none of its samples, while the
++  // guest GPU rasterizes it and counts them (Kameo measures how much of each light glow is on screen
++  // with such a quad and draws the glow by the count: no glow ever showed). A stencil test that
++  // always passes and keeps every value binds the depth-stencil target without writing anything.
++  if (guest_occlusion_query_open_ && is_rasterization_done && !normalized_depth_control.z_enable &&
++      !normalized_depth_control.stencil_enable && regs.Get<reg::RB_DEPTHCONTROL>().z_enable) {
++    normalized_depth_control.stencil_enable = 1;
++    normalized_depth_control.backface_enable = 0;
++    normalized_depth_control.stencilfunc = xenos::CompareFunction::kAlways;
++    normalized_depth_control.stencilfail = xenos::StencilOp::kKeep;
++    normalized_depth_control.stencilzpass = xenos::StencilOp::kKeep;
++    normalized_depth_control.stencilzfail = xenos::StencilOp::kKeep;
++  }
+ 
+   // Shader modifications.
+   uint32_t ps_param_gen_pos = UINT32_MAX;
+diff --git a/src/graphics/vulkan/command_processor.cpp b/src/graphics/vulkan/command_processor.cpp
+index d7a8f60..137dccb 100644
+--- a/src/graphics/vulkan/command_processor.cpp
++++ b/src/graphics/vulkan/command_processor.cpp
+@@ -3683,6 +3683,21 @@ bool VulkanCommandProcessor::IssueDraw(xenos::PrimitiveType prim_type, uint32_t
+     draw_util::AddMemExportRanges(regs, *pixel_shader, memexport_ranges_);
+   }
+   reg::RB_DEPTHCONTROL normalized_depth_control = draw_util::GetNormalizedDepthControl(regs);
++  // Inside a guest occlusion query, a draw whose depth test always passes without writing must still
++  // be counted. The normalization (and the pipeline cache's) turns that test off, and a draw that
++  // then writes no color has nothing bound: the host query counts none of its samples, while the
++  // guest GPU rasterizes it and counts them (Kameo measures how much of each light glow is on screen
++  // with such a quad and draws the glow by the count: no glow ever showed). A stencil test that
++  // always passes and keeps every value binds the depth-stencil target without writing anything.
++  if (guest_occlusion_query_open_ && is_rasterization_done && !normalized_depth_control.z_enable &&
++      !normalized_depth_control.stencil_enable && regs.Get<reg::RB_DEPTHCONTROL>().z_enable) {
++    normalized_depth_control.stencil_enable = 1;
++    normalized_depth_control.backface_enable = 0;
++    normalized_depth_control.stencilfunc = xenos::CompareFunction::kAlways;
++    normalized_depth_control.stencilfail = xenos::StencilOp::kKeep;
++    normalized_depth_control.stencilzpass = xenos::StencilOp::kKeep;
++    normalized_depth_control.stencilzfail = xenos::StencilOp::kKeep;
++  }
+ 
+   uint32_t ps_param_gen_pos = UINT32_MAX;
+   uint32_t interpolator_mask =
+-- 
+2.39.0.windows.2
+
