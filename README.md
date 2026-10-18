@@ -131,6 +131,11 @@ message explains the change:
 | 0024 | CMake: rexruntime and the GPU plugins are copied next to the executable on every build, not only when it links again |
 | 0025 | Code generator: a `share_registers` function (an SEH funclet, a setjmp caller) keeps its registers across calls when the others are local variables |
 
+[NativeXRenderer](native_x_renderer/README.md) (`native_x_renderer/`, a submodule: a native renderer that hooks the
+game's Direct3D calls, developed on POTCAWERecomp and used by GRAWRecomp) brings its own SDK patches
+(`native_x_renderer/sdk_patches/`), applied after this series. They change nothing while NativeXRenderer is off.
+Its integration into Kameo has just started: the game still draws on the Xenos path.
+
 ## Credits
 
 - [ReXGlue SDK](https://github.com/rexglue/rexglue-sdk), whose runtime is derived from [Xenia](https://xenia.jp).

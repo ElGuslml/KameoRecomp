@@ -38,9 +38,17 @@ void LoadLauncherOptions(const std::filesystem::path& options_path,
                 options_path.string());
   }
 
+  // NativeXRenderer draws through its own Vulkan device (DiligentCore), and the SDK's backend only keeps the
+  // GPU in sync then. Its Vulkan backend keeps the process on one graphics API: no idle D3D12 device next
+  // to NativeXRenderer's, and overlays such as RTSS report the API that presents (as POTCAWE, D27).
+  if (rex::cvar::Query<bool>("native_x_renderer") && rex::cvar::Query<std::string>("gpu_backend") != "vulkan") {
+    rex::cvar::SetFlagByName("gpu_backend", "vulkan");
+    REXLOG_INFO("[options] gpu_backend set to vulkan: NativeXRenderer draws");
+  }
+
   bool fullscreen = rex::cvar::Query<bool>("fullscreen");
   REXLOG_INFO("[options] monitor={} scale={}x{} display={} window={}x{} video_mode={}x{} "
-              "letterbox={} 60fps={} gpu_backend={} language={}{}",
+              "letterbox={} 60fps={} gpu_backend={} native_x_renderer={} language={}{}",
               rex::cvar::Query<int32_t>("monitor"),
               rex::cvar::Query<int32_t>("draw_resolution_scale_x"),
               rex::cvar::Query<int32_t>("draw_resolution_scale_y"),
@@ -51,7 +59,7 @@ void LoadLauncherOptions(const std::filesystem::path& options_path,
               rex::cvar::Query<int32_t>("video_mode_width"),
               rex::cvar::Query<int32_t>("video_mode_height"),
               rex::cvar::Query<bool>("present_letterbox"), rex::cvar::Query<bool>("kameo_60fps"),
-              rex::cvar::Query<std::string>("gpu_backend"),
+              rex::cvar::Query<std::string>("gpu_backend"), rex::cvar::Query<bool>("native_x_renderer"),
               rex::cvar::Query<uint32_t>("user_language"),
               rex::cvar::Query<bool>("kameo_latin_american_spanish") ? " (Latin American)" : "");
 }

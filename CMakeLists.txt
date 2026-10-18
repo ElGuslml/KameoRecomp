@@ -1,4 +1,5 @@
-# KameoRecomp - static recompilation of Kameo: Elements of Power (Xbox 360), built on the ReXGlue SDK.
+# KameoRecomp - static recompilation of Kameo: Elements of Power (Xbox 360), built on the ReXGlue SDK,
+# with NativeXRenderer (native_x_renderer/, a submodule) as an alternative renderer.
 #
 # The SDK is the thirdparty/rexglue-sdk git submodule (official repository, pinned to v0.10.0);
 # the fixes in patches/ are applied to it at configure time (cmake/apply_sdk_patches.cmake).
@@ -62,6 +63,7 @@ set(KAMEO_SOURCES
     src/framerate.cpp
     src/gpu_wait.cpp
     src/language.cpp
+    src/native_x_renderer_kameo.cpp
     src/options.cpp
     src/startup.cpp
 )
@@ -74,6 +76,12 @@ endif()
 
 rexglue_setup_target(kameo GPU_PLUGINS xenos)
 add_dependencies(kameo kameo_sources_marker)
+
+# NativeXRenderer: the native renderer (native_x_renderer/README.md). The game side (hooks, profile) is in src/.
+add_subdirectory(native_x_renderer)
+target_link_libraries(kameo PRIVATE native_x_renderer)
+# NVIDIA's DLSS runtime next to the executable.
+native_x_renderer_copy_runtime(kameo)
 
 # The target and the app keep the name "kameo" (kameo.toml, logs\kameo_NNN.log); only the
 # executable gets a descriptive name.

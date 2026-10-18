@@ -12,6 +12,9 @@
 #include <rex/system/kernel_state.h>
 #include <rex/system/xthread.h>
 
+#include <native_x_renderer/native_x_renderer.h>
+
+#include "native_x_renderer_kameo.h"
 #include "options.h"
 #include "startup.h"
 
@@ -59,16 +62,20 @@ class KameoApp : public rex::ReXApp {
     kameo::EnsureDefaultConfig(exe_dir / "kameo.toml");
     if (!rex::ReXApp::SetupEnvironment()) return false;
     REXLOG_INFO("[startup] User data: {}", user_data_root().string());
+    REXLOG_INFO("[startup] {}", native_x_renderer::Describe());
     if (!kameo::CheckGameFiles(game_data_root())) return false;
     kameo::LoadLauncherOptions(exe_dir / "kameo_options.toml", kameo::GpuPluginPath());
     return true;
   }
 
-  // Window title (the SDK sets "<app name> <SDK build stamp>").
+  // Window title (the SDK sets "<app name> <SDK build stamp>"), then NativeXRenderer, before the guest starts: its
+  // hooks (src/native_x_renderer_kameo.cpp) are pass-throughs until it is initialized.
   void OnPostSetup() override {
     if (window()) {
       window()->SetTitle("Kameo: Elements of Power");
     }
+    native_x_renderer::Initialize(kameo::NativeXRendererProfile(), runtime() ? runtime()->graphics_system() : nullptr,
+                                  window(), runtime() ? runtime()->cache_root() : std::filesystem::path());
   }
 
   // On exit, log whether the game asked to launch another executable.

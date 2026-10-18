@@ -1,5 +1,7 @@
 # Applies the patches in patches/ (a git format-patch series, in file name order) to the ReXGlue SDK
-# submodule (REXSDK_DIR) at configure time.
+# submodule (REXSDK_DIR) at configure time, then NativeXRenderer's own SDK patches in
+# native_x_renderer/sdk_patches/ (native_x_renderer/docs/decisions.md, D10). The shared series in patches/ stays
+# identical to GRAWRecomp's and POTCAWERecomp's; changes only NativeXRenderer needs travel with the library.
 #
 # - Pristine submodule (no changes to tracked files): every patch is applied in order and a stamp with
 #   the series hash is written to the submodule's git directory.
@@ -17,6 +19,9 @@ endif()
 
 file(GLOB _rex_patches "${CMAKE_CURRENT_LIST_DIR}/../patches/*.patch")
 list(SORT _rex_patches)
+file(GLOB _native_x_renderer_patches "${CMAKE_CURRENT_LIST_DIR}/../native_x_renderer/sdk_patches/*.patch")
+list(SORT _native_x_renderer_patches)
+list(APPEND _rex_patches ${_native_x_renderer_patches})
 list(LENGTH _rex_patches _rex_patch_count)
 
 set(_rex_series "")
