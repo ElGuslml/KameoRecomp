@@ -7,6 +7,35 @@
 # through tail calls.
 0x822F9158 = {}   # branched to from 0x822F92D4 (the dispatcher at 0x822F92AC, next to 0x822F9008)
 
+# The game's waits for the GPU without spinning (src/gpu_wait.cpp): the D3D library waits for the
+# command processor in four loops (fences, ring space, two more on GPU write-backs), each filling a
+# hang-check record on the stack and calling the hang check sub_820D6D30 on every iteration; on PC they
+# kept the main thread at 100 % of a core. kameo_gpu_wait_sleep_us = 0 disables it.
+[[midasm_hook]]
+address = 0x820CDE10   # stw r8,84(r1) (sub_820CDD80, fences: the record's start tick)
+name = "KameoGpuWaitBeginHook"
+[[midasm_hook]]
+address = 0x820CD5D8   # stw r11,92(r1) (sub_820CD578, ring space)
+name = "KameoGpuWaitBeginHook"
+[[midasm_hook]]
+address = 0x820CD11C   # stw r11,92(r1) (sub_820CD0C8)
+name = "KameoGpuWaitBeginHook"
+[[midasm_hook]]
+address = 0x820D59CC   # stw r11,92(r1) (sub_820D57F8)
+name = "KameoGpuWaitBeginHook"
+[[midasm_hook]]
+address = 0x820D6D30   # mflr r12 (entry of sub_820D6D30: every iteration of a wait)
+name = "KameoGpuWaitSpinHook"
+
+# Videos without a spinning thread (src/bink_io.cpp): Bink's 80 Hz timer thread services the video
+# reader again and again while its buffer is less than half full, even while the reading is suspended
+# and its Idle function does nothing. The hook treats a suspended reader as half full (once per tick).
+# kameo_bink_io_fix = false disables it.
+[[midasm_hook]]
+address = 0x826CFDB8   # cmplwi cr6,r11,50 (sub_826CFDA0, r11 = buffer use in percent)
+name = "KameoBinkIoPriorityHook"
+registers = ["r3", "r11"]
+
 # 60 FPS (src/framerate.cpp): the Direct3D library reads the D3DRS_PRESENTINTERVAL render state
 # (device+13756, 2 in this game) in sub_820CF868 and encodes it into the swap descriptor for the
 # vblank callback; the hook turns 2 into 1 when kameo_60fps is on.

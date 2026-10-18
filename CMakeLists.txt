@@ -58,7 +58,9 @@ set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${KAMEO_SOURCES_
 # Sources
 set(KAMEO_SOURCES
     src/main.cpp
+    src/bink_io.cpp
     src/framerate.cpp
+    src/gpu_wait.cpp
     src/language.cpp
     src/options.cpp
     src/startup.cpp

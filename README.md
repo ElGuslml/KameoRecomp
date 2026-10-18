@@ -18,7 +18,8 @@ compiled; the Xbox 360 GPU is emulated by ReXGlue's Xenos backend (derived from 
   flow without a switch, no copies into render targets a clear overwrites, CPU uploads kept valid across
   frames); whether Kameo needs each of them has not been tested yet. POTCAWERecomp's
   `render_target_draw_clears` is off: with it the first cinematic of Thorn's Castle shows no geometry.
-- Fixes so far: one function the code analyzer missed (`kameo_functions.toml`).
+- Fixes so far: one function the code analyzer missed (`kameo_functions.toml`), and the game's waits
+  for the GPU and its video reader no longer keep one CPU core busy ([`docs/cpu-usage.md`](docs/cpu-usage.md)).
 - **60 FPS option**, with the automatic camera following fixed for it
   ([`docs/frame-rate.md`](docs/frame-rate.md)). Off by default; tested only in the first part of Thorn's
   Castle so far.

@@ -7,3 +7,4 @@ the symptom, the cause, the fix and how to turn the fix off, so that you can che
 |---|---|
 | [Game language](language.md) | Working: launcher language row, Latin American Spanish through a hook |
 | [60 FPS option](frame-rate.md) | Working, being tested: present interval 2 → 1, camera following fixed for it |
+| [CPU usage: one core at 100 %](cpu-usage.md) | Fixed: the game's waits for the GPU and the video reader no longer spin |
