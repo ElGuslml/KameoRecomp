@@ -55,6 +55,18 @@ The video rows compare the build with fix 1 and without / with fix 2. Frame rate
 intro and the videos take as long as before. At the main menu the CPU package power reported by the
 overlay went from about 63 W to 23 W.
 
+## Also: registers as local variables in the generated code (2026-10-18)
+
+Not a bug, an optimization of the recompiled code, as in GRAWRecomp and POTCAWERecomp: with the SDK's
+codegen options `non_volatile_as_local`, `cr_as_local`, `ctr_as_local`, `xer_as_local` and
+`reserved_as_local` ([`kameo_functions.toml`](../kameo_functions.toml)), the PowerPC registers that no call
+passes on are local variables of each function instead of fields of a structure in memory, so the compiler
+keeps them in host registers. The C runtime's `setjmp`/`longjmp` (used by the shader compiler linked into
+the game) are named for the SDK, and the functions that call `setjmp` keep their registers in the structure.
+
+First level: 0.87 → 0.78-0.79 cores (the game's two threads about 20 % less); the menus and videos, mostly
+idle, stay within the measurement noise. Same image, 60 FPS.
+
 ## Options
 
 | Option (`kameo.toml` or `--name=value`) | Default | Meaning |
