@@ -1,0 +1,31 @@
+// Resources of Kameo Launcher.exe: icon (res/icon.ico, when present) and file properties.
+#include <winver.h>
+#include "version.h"
+
+#ifdef KAMEORECOMP_HAS_ICON
+1 ICON "icon.ico"
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION KAMEORECOMP_VERSION
+PRODUCTVERSION KAMEORECOMP_VERSION
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "FileDescription", "Kameo Launcher - options for KameoRecomp"
+      VALUE "FileVersion", KAMEORECOMP_VERSION_STR
+      VALUE "ProductName", "KameoRecomp"
+      VALUE "ProductVersion", KAMEORECOMP_VERSION_STR
+      VALUE "OriginalFilename", "Kameo Launcher.exe"
+      VALUE "LegalCopyright", "KameoRecomp code: MIT License."
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

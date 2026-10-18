@@ -1,0 +1,9 @@
+# LF everywhere, like the ReXGlue SDK. The patches in patches/ must stay LF to apply to the SDK sources
+# even when core.autocrlf is on.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.exe binary
+*.dll binary

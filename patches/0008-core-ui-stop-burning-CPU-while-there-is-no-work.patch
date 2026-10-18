@@ -1,0 +1,228 @@
+From ca822216099b110d521dada9426e8e797b337f33 Mon Sep 17 00:00:00 2001
+From: Gustavo Garcia <44309076+ElGuslml@users.noreply.github.com>
+Date: Sat, 10 Oct 2026 23:49:16 -0600
+Subject: [PATCH 08/24] core, ui: stop burning CPU while there is no work
+
+Two idle loops kept a core busy for no useful work:
+
+- TimerQueue waited with disruptorplus's spin_wait strategy, which runs
+  thousands of pause instructions on every wait before even checking the
+  deadline. With the 1 ms KeTimeStampBundle timer that happened 1000
+  times per second (12-15% of a core). The thread now sleeps on a
+  high-resolution waitable timer until the next deadline (at most 1 ms
+  at a time, so new timers are noticed as fast as before) and polls the
+  ring buffer without blocking. If the timer cannot be created it falls
+  back to the original spin wait.
+
+- ImGuiDrawer requested a new UI paint as long as any dialog was
+  registered. The achievement toast dialog is registered for the whole
+  session, so the presenter repainted at the host refresh rate even
+  though the guest outputs far fewer frames. New virtual
+  ImGuiDialog::WantsContinuousPaint() (default true); the achievement
+  toast only asks for it while a toast is queued or showing.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ include/rex/ui/imgui_dialog.h              |  7 ++
+ include/rex/ui/overlay/achievement_toast.h |  3 +
+ src/core/timer_queue.cpp                   | 83 +++++++++++++++++++++-
+ src/ui/imgui_drawer.cpp                    | 12 +++-
+ src/ui/overlay/achievement_toast.cpp       |  6 ++
+ 5 files changed, 107 insertions(+), 4 deletions(-)
+
+diff --git a/include/rex/ui/imgui_dialog.h b/include/rex/ui/imgui_dialog.h
+index a7ab6b3..c5a7b25 100644
+--- a/include/rex/ui/imgui_dialog.h
++++ b/include/rex/ui/imgui_dialog.h
+@@ -39,6 +39,13 @@ class ImGuiDialog {
+ 
+   void Draw();
+ 
++  // Whether the dialog currently needs the UI to be repainted continuously
++  // (animation, input). A dialog that stays registered for the whole session
++  // but usually shows nothing (notifications) returns false while idle, so the
++  // presenter only paints when the guest output changes instead of at the host
++  // refresh rate.
++  virtual bool WantsContinuousPaint() { return true; }
++
+  protected:
+   ImGuiDialog(ImGuiDrawer* imgui_drawer);
+ 
+diff --git a/include/rex/ui/overlay/achievement_toast.h b/include/rex/ui/overlay/achievement_toast.h
+index 7642601..bd9ac7e 100644
+--- a/include/rex/ui/overlay/achievement_toast.h
++++ b/include/rex/ui/overlay/achievement_toast.h
+@@ -35,6 +35,9 @@ class AchievementToastDialog : public AchievementNotificationDialog {
+   // Thread-safe: safe to call from any thread, including guest threads.
+   void Push(const rex::system::AchievementEvent& event) override;
+ 
++  // Only while a toast is queued or showing (it is registered all session).
++  bool WantsContinuousPaint() override;
++
+  protected:
+   void OnDraw(ImGuiIO& io) override;
+ 
+diff --git a/src/core/timer_queue.cpp b/src/core/timer_queue.cpp
+index 5cfea05..325cc8b 100644
+--- a/src/core/timer_queue.cpp
++++ b/src/core/timer_queue.cpp
+@@ -10,7 +10,9 @@
+  */
+ 
+ #include <algorithm>
++#include <chrono>
+ #include <forward_list>
++#include <thread>
+ 
+ #include <disruptorplus/multi_threaded_claim_strategy.hpp>
+ #include <disruptorplus/ring_buffer.hpp>
+@@ -18,15 +20,71 @@
+ #include <disruptorplus/spin_wait_strategy.hpp>
+ 
+ #include <rex/assert.h>
++#include <rex/platform.h>
+ #include <rex/thread.h>
+ #include <rex/thread/timer_queue.h>
+ 
++#if REX_PLATFORM_WIN32
++#include "platform_win.h"
++#endif
++
+ namespace dp = disruptorplus;
+ 
+ namespace rex::thread {
+ 
+ using WaitItem = TimerQueueWaitItem;
+ 
++namespace {
++
++// Sleeps for (approximately) the given duration with sub-millisecond precision,
++// without spinning. Returns false if that is not possible, in which case the
++// caller falls back to the spin wait.
++class PreciseSleeper {
++ public:
++  PreciseSleeper() {
++#if REX_PLATFORM_WIN32
++    // High-resolution waitable timers (Windows 10 1803+) do not depend on the
++    // process timer resolution (timeBeginPeriod).
++    timer_ = CreateWaitableTimerExW(nullptr, nullptr, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
++                                    TIMER_ALL_ACCESS);
++#endif
++  }
++  ~PreciseSleeper() {
++#if REX_PLATFORM_WIN32
++    if (timer_) {
++      CloseHandle(timer_);
++    }
++#endif
++  }
++  PreciseSleeper(const PreciseSleeper&) = delete;
++  PreciseSleeper& operator=(const PreciseSleeper&) = delete;
++
++  bool Sleep(std::chrono::nanoseconds duration) {
++#if REX_PLATFORM_WIN32
++    if (!timer_) {
++      return false;
++    }
++    LARGE_INTEGER due;
++    // Negative = relative, in 100 ns units.
++    due.QuadPart = -std::max<LONGLONG>(1, LONGLONG(duration.count() / 100));
++    if (!SetWaitableTimerEx(timer_, &due, 0, nullptr, nullptr, nullptr, 0)) {
++      return false;
++    }
++    return WaitForSingleObject(timer_, INFINITE) == WAIT_OBJECT_0;
++#else
++    std::this_thread::sleep_for(duration);
++    return true;
++#endif
++  }
++
++ private:
++#if REX_PLATFORM_WIN32
++  HANDLE timer_ = nullptr;
++#endif
++};
++
++}  // namespace
++
+ class TimerQueue {
+  public:
+   using clock = WaitItem::clock;
+@@ -64,12 +122,31 @@ class TimerQueue {
+ 
+     set_current_thread_name("rex::thread::TimerQueue");
+ 
++    // The spin wait strategy burns 0.1-0.2 ms of pause loops on every wait
++    // before even checking the timeout, and the 1 ms KeTimeStampBundle timer
++    // makes it wait 1000 times per second (12-15% of a core in practice).
++    // Instead, sleep until the next timer is due (at most 1 ms at a time, so a
++    // newly queued timer is noticed as quickly as the spin wait's own 1 ms
++    // sleeps would) and then poll the ring buffer without blocking.
++    constexpr auto kMaxSleep = std::chrono::milliseconds(1);
++    PreciseSleeper sleeper;
++    bool precise_sleep = true;
++
+     while (!stop_token.stop_requested()) {
+       {
+         // Consume new wait items and add them to sorted wait queue
+-        dp::sequence_t available = claim_strategy_.wait_until_published(
+-            next_sequence, next_sequence - 1,
+-            wait_queue_.empty() ? clock::time_point::max() : wait_queue_.front()->due_);
++        dp::sequence_t available;
++        if (precise_sleep && !wait_queue_.empty()) {
++          auto remaining = wait_queue_.front()->due_ - clock::now();
++          if (remaining > clock::duration::zero()) {
++            precise_sleep = sleeper.Sleep(std::min<clock::duration>(remaining, kMaxSleep));
++          }
++          available = claim_strategy_.last_published_after(next_sequence - 1);
++        } else {
++          available = claim_strategy_.wait_until_published(
++              next_sequence, next_sequence - 1,
++              wait_queue_.empty() ? clock::time_point::max() : wait_queue_.front()->due_);
++        }
+ 
+         // Check for timeout
+         if (available != next_sequence - 1) {
+diff --git a/src/ui/imgui_drawer.cpp b/src/ui/imgui_drawer.cpp
+index f270f3c..f80c549 100644
+--- a/src/ui/imgui_drawer.cpp
++++ b/src/ui/imgui_drawer.cpp
+@@ -439,7 +439,17 @@ void ImGuiDrawer::Draw(UIDrawContext& ui_draw_context) {
+   if (!dialogs_.empty()) {
+     // Repaint (and handle input) continuously if still active. In detached mode
+     // there is no presenter; the app drives repaint via its own present loop.
+-    if (presenter_) {
++    // Dialogs that are idle (always-registered notifications with nothing to
++    // show) don't count: otherwise the presenter repaints at the host refresh
++    // rate for the whole session even though the guest outputs 60 frames.
++    bool wants_continuous_paint = false;
++    for (ImGuiDialog* dialog : dialogs_) {
++      if (dialog->WantsContinuousPaint()) {
++        wants_continuous_paint = true;
++        break;
++      }
++    }
++    if (presenter_ && wants_continuous_paint) {
+       presenter_->RequestUIPaintFromUIThread();
+     }
+   }
+diff --git a/src/ui/overlay/achievement_toast.cpp b/src/ui/overlay/achievement_toast.cpp
+index 53b8c0b..237d19d 100644
+--- a/src/ui/overlay/achievement_toast.cpp
++++ b/src/ui/overlay/achievement_toast.cpp
+@@ -29,6 +29,12 @@ void AchievementToastDialog::Push(const rex::system::AchievementEvent& event) {
+   queue_.push_back({event, std::chrono::steady_clock::now()});
+ }
+ 
++bool AchievementToastDialog::WantsContinuousPaint() {
++  // A new toast is picked up by the next paint caused by a guest frame.
++  std::lock_guard<std::mutex> lock(mutex_);
++  return !queue_.empty();
++}
++
+ void AchievementToastDialog::OnDraw(ImGuiIO& io) {
+   auto now = std::chrono::steady_clock::now();
+ 
+-- 
+2.39.0.windows.2
+

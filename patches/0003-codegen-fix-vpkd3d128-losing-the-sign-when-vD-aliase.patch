@@ -1,0 +1,137 @@
+From bbf18283e0abdce08b9a06f4832c2350d18f57c3 Mon Sep 17 00:00:00 2001
+From: Gustavo Garcia <44309076+ElGuslml@users.noreply.github.com>
+Date: Sat, 10 Oct 2026 23:48:17 -0600
+Subject: [PATCH 03/24] codegen: fix vpkd3d128 losing the sign when vD aliases
+ vB
+
+The FLOAT16_2, NORMSHORT4 and FLOAT16_4 cases wrote the output lanes of vD
+while still reading the source lanes from vB. With vD == vB (the usual
+form, e.g. vpkd3d128 v0,v0,5,2,2), writing u16[7] overwrote the high half
+of u32[3] before its sign bit was read, so every negative value was
+packed as positive.
+
+Snapshot the source lanes into a local array before writing any output
+lane. Projects must be regenerated for the fix to take effect.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/codegen/builders/vector.cpp | 67 ++++++++++++++++++++-------------
+ 1 file changed, 40 insertions(+), 27 deletions(-)
+
+diff --git a/src/codegen/builders/vector.cpp b/src/codegen/builders/vector.cpp
+index cbdd7f7..1a7bf12 100644
+--- a/src/codegen/builders/vector.cpp
++++ b/src/codegen/builders/vector.cpp
+@@ -1281,26 +1281,31 @@ bool build_vpkd3d128(BuilderContext& ctx) {
+       // Pack 2 elements into 32 bits (1 word)
+       // Guest element 0 goes to high 16 bits, element 1 to low 16 bits
+       // Output u16 index = (1-i) + 2*shift for element i
++      // Snapshot every source lane before writing any output lane: vD may alias vB
++      // (vpkd3d128 v0,v0,...), and writing u16[7] clobbers u32[3] before its sign bit
++      // is read, which dropped the sign of every packed value.
++      ctx.println("\t{{");
++      ctx.println("\t\tconst uint32_t vpk_s[2] = {{ {0}.u32[3], {0}.u32[2] }};",
++                  ctx.v(ctx.insn.operands[1]));
+       for (size_t i = 0; i < 2; i++) {
+-        size_t srcIdx = 3 - i;  // Guest element i is at host array index 3-i
+         size_t dstIdx =
+             (1 - i) + (2 * ctx.insn.operands[4]);  // Output reversed: elem 0 to high, elem 1 to low
+-        ctx.println("\t{}.u32 = ({}.u32[{}]&0x7FFFFFFF);", ctx.temp(), ctx.v(ctx.insn.operands[1]),
+-                    srcIdx);
++        ctx.println("\t\t{}.u32 = (vpk_s[{}]&0x7FFFFFFF);", ctx.temp(), i);
+         ctx.println(
+-            "\t{0}.u8[0] = ({1}.f32 != {1}.f32) || ({1}.f32 > 65504.0f) ? 0xFF : "
+-            "(({2}.u32[{3}]&0x7f800000)>>23);",
+-            ctx.v_temp(), ctx.temp(), ctx.v(ctx.insn.operands[1]), srcIdx);
+-        ctx.println("\t{}.u16 = {}.u8[0] != 0xFF ? (({}.u32[{}]&0x7FE000)>>13) : 0x0;", ctx.temp(),
+-                    ctx.v_temp(), ctx.v(ctx.insn.operands[1]), srcIdx);
++            "\t\t{0}.u8[0] = ({1}.f32 != {1}.f32) || ({1}.f32 > 65504.0f) ? 0xFF : "
++            "((vpk_s[{2}]&0x7f800000)>>23);",
++            ctx.v_temp(), ctx.temp(), i);
++        ctx.println("\t\t{}.u16 = {}.u8[0] != 0xFF ? ((vpk_s[{}]&0x7FE000)>>13) : 0x0;", ctx.temp(),
++                    ctx.v_temp(), i);
+         ctx.println(
+-            "\t{0}.u16[{1}] = {2}.u8[0] != 0xFF ? ({2}.u8[0] > 0x70 ? "
++            "\t\t{0}.u16[{1}] = {2}.u8[0] != 0xFF ? ({2}.u8[0] > 0x70 ? "
+             "((({2}.u8[0]-0x70)<<10)+{3}.u16) : (0x71-{2}.u8[0] > 31 ? 0x0 : "
+             "((0x400+{3}.u16)>>(0x71-{2}.u8[0])))) : 0x7FFF;",
+             ctx.v(ctx.insn.operands[0]), dstIdx, ctx.v_temp(), ctx.temp());
+-        ctx.println("\t{}.u16[{}] |= (({}.u32[{}]&0x80000000)>>16);", ctx.v(ctx.insn.operands[0]),
+-                    dstIdx, ctx.v(ctx.insn.operands[1]), srcIdx);
++        ctx.println("\t\t{}.u16[{}] |= ((vpk_s[{}]&0x80000000)>>16);", ctx.v(ctx.insn.operands[0]),
++                    dstIdx, i);
+       }
++      ctx.println("\t}}");
+       break;
+     }
+ 
+@@ -1309,16 +1314,19 @@ bool build_vpkd3d128(BuilderContext& ctx) {
+       // Pack 4 elements into 64 bits (2 words)
+       // Guest element 0 goes to highest 16-bit position, element 3 to lowest
+       // Output u16 index = (3-i) + 2*shift for element i
++      // Snapshot every source lane before writing any output lane (vD may alias vB).
++      ctx.println("\t{{");
++      ctx.println("\t\tconst int32_t vpk_s[4] = {{ {0}.s32[3], {0}.s32[2], {0}.s32[1], {0}.s32[0] }};",
++                  ctx.v(ctx.insn.operands[1]));
+       for (size_t i = 0; i < 4; i++) {
+-        size_t srcIdx = 3 - i;  // Guest element i is at host array index 3-i
+         size_t dstIdx = (3 - i) + (2 * ctx.insn.operands[4]);  // Output also reversed
+-        ctx.println("\t{}.s32 = {}.s32[{}] - 0x40400000;", ctx.temp(), ctx.v(ctx.insn.operands[1]),
+-                    srcIdx);
+-        ctx.println("\t{}.s32 = {}.s32 > 32767 ? 32767 : ({}.s32 < -32767 ? -32767 : {}.s32);",
++        ctx.println("\t\t{}.s32 = vpk_s[{}] - 0x40400000;", ctx.temp(), i);
++        ctx.println("\t\t{}.s32 = {}.s32 > 32767 ? 32767 : ({}.s32 < -32767 ? -32767 : {}.s32);",
+                     ctx.temp(), ctx.temp(), ctx.temp(), ctx.temp());
+-        ctx.println("\t{}.u16[{}] = uint16_t({}.s32);", ctx.v(ctx.insn.operands[0]), dstIdx,
++        ctx.println("\t\t{}.u16[{}] = uint16_t({}.s32);", ctx.v(ctx.insn.operands[0]), dstIdx,
+                     ctx.temp());
+       }
++      ctx.println("\t}}");
+       break;
+     }
+ 
+@@ -1330,25 +1338,30 @@ bool build_vpkd3d128(BuilderContext& ctx) {
+       if (ctx.insn.operands[3] != 2 || ctx.insn.operands[4] > 2)
+         REXCODEGEN_WARN("Unexpected float16_4 pack instruction at {:X}", ctx.base);
+ 
++      // Snapshot every source lane before writing any output lane: vD may alias vB
++      // (vpkd3d128 v0,v0,5,2,2 is the common form), and writing u16[7] clobbers u32[3]
++      // before its sign bit is read, which dropped the sign of every packed value.
++      ctx.println("\t{{");
++      ctx.println("\t\tconst uint32_t vpk_s[4] = {{ {0}.u32[3], {0}.u32[2], {0}.u32[1], {0}.u32[0] }};",
++                  ctx.v(ctx.insn.operands[1]));
+       for (size_t i = 0; i < 4; i++) {
+-        size_t srcIdx = 3 - i;  // Guest element i is at host array index 3-i
+         size_t dstIdx = (3 - i) + (2 * ctx.insn.operands[4]);  // Output also reversed
+-        ctx.println("\t{}.u32 = ({}.u32[{}]&0x7FFFFFFF);", ctx.temp(), ctx.v(ctx.insn.operands[1]),
+-                    srcIdx);
++        ctx.println("\t\t{}.u32 = (vpk_s[{}]&0x7FFFFFFF);", ctx.temp(), i);
+         ctx.println(
+-            "\t{0}.u8[0] = ({1}.f32 != {1}.f32) || ({1}.f32 > 65504.0f) ? 0xFF : "
+-            "(({2}.u32[{3}]&0x7f800000)>>23);",
+-            ctx.v_temp(), ctx.temp(), ctx.v(ctx.insn.operands[1]), srcIdx);
+-        ctx.println("\t{}.u16 = {}.u8[0] != 0xFF ? (({}.u32[{}]&0x7FE000)>>13) : 0x0;", ctx.temp(),
+-                    ctx.v_temp(), ctx.v(ctx.insn.operands[1]), srcIdx);
++            "\t\t{0}.u8[0] = ({1}.f32 != {1}.f32) || ({1}.f32 > 65504.0f) ? 0xFF : "
++            "((vpk_s[{2}]&0x7f800000)>>23);",
++            ctx.v_temp(), ctx.temp(), i);
++        ctx.println("\t\t{}.u16 = {}.u8[0] != 0xFF ? ((vpk_s[{}]&0x7FE000)>>13) : 0x0;", ctx.temp(),
++                    ctx.v_temp(), i);
+         ctx.println(
+-            "\t{0}.u16[{1}] = {2}.u8[0] != 0xFF ? ({2}.u8[0] > 0x70 ? "
++            "\t\t{0}.u16[{1}] = {2}.u8[0] != 0xFF ? ({2}.u8[0] > 0x70 ? "
+             "((({2}.u8[0]-0x70)<<10)+{3}.u16) : (0x71-{2}.u8[0] > 31 ? 0x0 : "
+             "((0x400+{3}.u16)>>(0x71-{2}.u8[0])))) : 0x7FFF;",
+             ctx.v(ctx.insn.operands[0]), dstIdx, ctx.v_temp(), ctx.temp());
+-        ctx.println("\t{}.u16[{}] |= (({}.u32[{}]&0x80000000)>>16);", ctx.v(ctx.insn.operands[0]),
+-                    dstIdx, ctx.v(ctx.insn.operands[1]), srcIdx);
++        ctx.println("\t\t{}.u16[{}] |= ((vpk_s[{}]&0x80000000)>>16);", ctx.v(ctx.insn.operands[0]),
++                    dstIdx, i);
+       }
++      ctx.println("\t}}");
+       break;
+     }
+ 
+-- 
+2.39.0.windows.2
+

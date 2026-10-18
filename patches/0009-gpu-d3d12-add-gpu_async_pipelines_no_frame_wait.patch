@@ -1,0 +1,76 @@
+From 3ee778def5a9cf5d6b67d91720cd260e0e1becb3 Mon Sep 17 00:00:00 2001
+From: Gustavo Garcia <44309076+ElGuslml@users.noreply.github.com>
+Date: Sat, 10 Oct 2026 23:49:33 -0600
+Subject: [PATCH 09/24] gpu/d3d12: add gpu_async_pipelines_no_frame_wait
+
+With async_shader_compilation, PipelineCache::EndSubmission still created
+the queued pipelines on the command processor thread and waited for the
+ones being created on the creation threads. That wait is unnecessary:
+IssueDraw already skips draws whose pipeline does not exist yet, and
+SetPipelineStateHandle is only recorded for created pipelines. It turns
+every new pipeline into a 100-250 ms frame stall.
+
+New cvar gpu_async_pipelines_no_frame_wait (default false, D3D12 only).
+When set together with async_shader_compilation, EndSubmission leaves the
+pipelines to the creation threads, so a new object or effect appears a
+few frames late instead of the frame stalling.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ include/rex/graphics/flags.h          |  1 +
+ src/graphics/d3d12/pipeline_cache.cpp | 10 ++++++++++
+ src/graphics/flags.cpp                |  5 +++++
+ 3 files changed, 16 insertions(+)
+
+diff --git a/include/rex/graphics/flags.h b/include/rex/graphics/flags.h
+index e83cc2b..57c64c2 100644
+--- a/include/rex/graphics/flags.h
++++ b/include/rex/graphics/flags.h
+@@ -47,6 +47,7 @@ REXCVAR_DECLARE(bool, direct_host_resolve);
+ // GPU Textures
+ REXCVAR_DECLARE(bool, gpu_allow_invalid_fetch_constants);
+ REXCVAR_DECLARE(bool, gpu_depth_clamp);
++REXCVAR_DECLARE(bool, gpu_async_pipelines_no_frame_wait);
+ REXCVAR_DECLARE(bool, gpu_3d_to_2d_texture);
+ REXCVAR_DECLARE(int32_t, anisotropic_override);
+ REXCVAR_DECLARE(int32_t, texture_cache_memory_limit_render_to_texture);
+diff --git a/src/graphics/d3d12/pipeline_cache.cpp b/src/graphics/d3d12/pipeline_cache.cpp
+index 7f8d73b..63f85cd 100644
+--- a/src/graphics/d3d12/pipeline_cache.cpp
++++ b/src/graphics/d3d12/pipeline_cache.cpp
+@@ -763,6 +763,16 @@ void PipelineCache::EndSubmission() {
+     pipeline_storage_file_flush_needed_ = false;
+   }
+   if (!creation_threads_.empty()) {
++    // With async_shader_compilation, D3D12CommandProcessor::IssueDraw skips the
++    // draws whose pipeline isn't created yet, so the submission never refers to
++    // a pipeline in creation (SetPipelineStateHandle is only recorded for
++    // created ones). Waiting here (or creating the leftovers on this thread)
++    // only stalls the frame for the whole creation - 100-250 ms for a new
++    // pipeline in 555307D5 (GRAW); leave them to the creation threads.
++    if (REXCVAR_GET(async_shader_compilation) &&
++        REXCVAR_GET(gpu_async_pipelines_no_frame_wait)) {
++      return;
++    }
+     CreateQueuedPipelinesOnProcessorThread();
+     // Await creation of all queued pipelines.
+     bool await_creation_completion_event;
+diff --git a/src/graphics/flags.cpp b/src/graphics/flags.cpp
+index 7590264..322413c 100644
+--- a/src/graphics/flags.cpp
++++ b/src/graphics/flags.cpp
+@@ -21,6 +21,11 @@ REXCVAR_DEFINE_BOOL(gpu_depth_clamp, false, "GPU",
+                     "range instead (D3D12 DepthClipEnable = FALSE). Xenos appears to behave this way: "
+                     "555307D5 (GRAW) draws its sky dome 1.5x beyond its own far plane with "
+                     "PA_CL_CLIP_CNTL.clip_disable = 0 and expects it to be visible");
++REXCVAR_DEFINE_BOOL(gpu_async_pipelines_no_frame_wait, false, "GPU",
++                    "With async_shader_compilation (D3D12): don't wait at the end of each frame for "
++                    "the pipelines still being created. Draws using them are already skipped until "
++                    "they are ready, so a new object appears a few frames later instead of the "
++                    "frame stalling for the whole creation (100-250 ms for a new pipeline)");
+ REXCVAR_DEFINE_BOOL(depth_float24_round, false, "GPU", "Round float24 depth values");
+ REXCVAR_DEFINE_BOOL(depth_float24_convert_in_pixel_shader, false, "GPU",
+                     "Convert float24 depth in pixel shader");
+-- 
+2.39.0.windows.2
+

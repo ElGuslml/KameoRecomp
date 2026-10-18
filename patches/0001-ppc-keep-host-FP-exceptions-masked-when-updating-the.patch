@@ -1,0 +1,73 @@
+From 1e051e5c9bdacd1265d05bf4c31ab270d709b384 Mon Sep 17 00:00:00 2001
+From: Gustavo Garcia <44309076+ElGuslml@users.noreply.github.com>
+Date: Sat, 10 Oct 2026 23:47:04 -0600
+Subject: [PATCH 01/24] ppc: keep host FP exceptions masked when updating the
+ FPSCR
+
+storeFromGuest (mtfsf) and the flush-mode helpers started from the cached
+csr, which is 0 on threads that never went through InitHost. Writing that
+back to MXCSR/FPCR unmasked every host floating-point exception, so any
+inexact fmuls killed the process with STATUS_FLOAT_INEXACT_RESULT.
+
+Start from the thread's current control register (getcsr()) and run
+Platform::InitHostExceptions on the new value before setting it.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ include/rex/ppc/context.h | 20 ++++++++++++++------
+ 1 file changed, 14 insertions(+), 6 deletions(-)
+
+diff --git a/include/rex/ppc/context.h b/include/rex/ppc/context.h
+index 0ede542..835132a 100644
+--- a/include/rex/ppc/context.h
++++ b/include/rex/ppc/context.h
+@@ -171,32 +171,40 @@ struct FPSCRRegister {
+     return HostToGuest[(csr & RoundMaskVal) >> RoundShift];
+   }
+ 
++  // Starts from the thread's current MXCSR/FPCR (not the cached csr, which can be 0
++  // in contexts that never went through InitHost) and keeps the host floating-point
++  // exceptions masked: with csr == 0, mtfsf unmasked them and any inexact fmuls
++  // crashed the process (STATUS_FLOAT_INEXACT_RESULT).
+   inline void storeFromGuest(uint32_t value) noexcept {
+-    csr &= ~RoundMaskVal;
+-    csr |= Platform::GuestToHost[value & kRoundMask];
++    csr = (getcsr() & ~uint32_t(RoundMaskVal)) | uint32_t(Platform::GuestToHost[value & kRoundMask]);
++    Platform::InitHostExceptions(csr);
+     setcsr(csr);
+   }
+ 
+   inline void enableFlushModeUnconditional() noexcept {
+-    csr |= FlushMask;
++    csr = getcsr() | uint32_t(FlushMask);
++    Platform::InitHostExceptions(csr);
+     setcsr(csr);
+   }
+ 
+   inline void disableFlushModeUnconditional() noexcept {
+-    csr &= ~FlushMask;
++    csr = getcsr() & ~uint32_t(FlushMask);
++    Platform::InitHostExceptions(csr);
+     setcsr(csr);
+   }
+ 
+   inline void enableFlushMode() noexcept {
+     if ((csr & FlushMask) != FlushMask) [[unlikely]] {
+-      csr |= FlushMask;
++      csr = getcsr() | uint32_t(FlushMask);
++      Platform::InitHostExceptions(csr);
+       setcsr(csr);
+     }
+   }
+ 
+   inline void disableFlushMode() noexcept {
+     if ((csr & FlushMask) != 0) [[unlikely]] {
+-      csr &= ~FlushMask;
++      csr = getcsr() & ~uint32_t(FlushMask);
++      Platform::InitHostExceptions(csr);
+       setcsr(csr);
+     }
+   }
+-- 
+2.39.0.windows.2
+

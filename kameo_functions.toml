@@ -1,0 +1,32 @@
+# kameo_functions.toml - Manual corrections for the analyzer (default.xex): functions it missed,
+# [[switch_tables]] the codegen mistranslates and [[midasm_hook]]s into src/. See POTCAWERecomp's
+# potcawe_functions.toml and GRAWRecomp's yeti_functions.toml for examples of each.
+
+[functions]
+# Branch (b) targets that the automatic analysis did not assign to any function: functions reached only
+# through tail calls.
+0x822F9158 = {}   # branched to from 0x822F92D4 (the dispatcher at 0x822F92AC, next to 0x822F9008)
+
+# 60 FPS (src/framerate.cpp): the Direct3D library reads the D3DRS_PRESENTINTERVAL render state
+# (device+13756, 2 in this game) in sub_820CF868 and encodes it into the swap descriptor for the
+# vblank callback; the hook turns 2 into 1 when kameo_60fps is on.
+[[midasm_hook]]
+address = 0x820CF918   # cmplwi cr6,r10,1 (after lwz r10,13756(r31) in sub_820CF868)
+name = "KameoPresentIntervalHook"
+registers = ["r10"]
+
+# Camera following at 60 FPS (src/framerate.cpp, ISpectre23's Xenia "FPS Camera Fix"): before the
+# new camera position is written in sub_82440D28, the hook divides the X and Z differences
+# target - current (f8, f6) by dt * 30 (f31) when kameo_60fps is on.
+[[midasm_hook]]
+address = 0x82440FA4   # fmadds f5,f8,f0,f13 (first of the three that write the position)
+name = "KameoCameraFollowHook"
+registers = ["f8", "f6", "f31"]
+
+# Language (src/language.cpp): sub_820B4F08 turns Spanish into the game's Latin American Spanish (10,
+# the "Mexican" folder) only on a North American console; the hook reports that region for Spanish
+# when kameo_latin_american_spanish is on (the SDK's XGetGameRegion returns 0xFFFF).
+[[midasm_hook]]
+address = 0x820B5230   # cmplwi cr6,r31,5 (after bl XGetLanguage, mr r31,r3, bl XGetGameRegion)
+name = "KameoLanguageHook"
+registers = ["r31", "r3"]

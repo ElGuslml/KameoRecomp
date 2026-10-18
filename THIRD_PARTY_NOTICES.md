@@ -1,0 +1,51 @@
+# Third-party notices
+
+KameoRecomp's own code is under the MIT license (see `LICENSE`). The executables built from this
+repository also contain the following software, each under its own license. Full license texts are in the
+`thirdparty/rexglue-sdk` submodule at the paths given below; binary releases ship them in a `licenses/`
+folder.
+
+## ReXGlue SDK
+
+- **ReXGlue SDK**: https://github.com/rexglue/rexglue-sdk, BSD 3-Clause, Copyright (c) 2026 Tom Clay.
+  License: `thirdparty/rexglue-sdk/LICENSE`. This project builds the SDK from source with the patches in
+  `patches/` applied.
+- **Xenia**: https://xenia.jp, BSD 3-Clause, Copyright (c) 2022 Ben Vanik and Xenia project contributors.
+  Portions of the ReXGlue SDK are derived from Xenia (same license file).
+
+## Components of the SDK (`thirdparty/rexglue-sdk/thirdparty/`)
+
+| Component | License | License file (under `thirdparty/rexglue-sdk/thirdparty/`) |
+|---|---|---|
+| FFmpeg (configured without GPL or nonfree parts) | LGPL 2.1 or later | `FFmpeg/COPYING.LGPLv2.1`, `FFmpeg/LICENSE.md` |
+| libmspack | LGPL 2.1 | `libmspack/libmspack/COPYING.LIB` |
+| SDL 3 | zlib | `sdl3/LICENSE.txt` |
+| {fmt} | MIT | `fmt/LICENSE` |
+| spdlog | MIT | `spdlog/LICENSE` |
+| toml++ | MIT | `tomlplusplus/LICENSE` |
+| Dear ImGui | MIT | `imgui/LICENSE.txt` |
+| inja | MIT | `inja/LICENSE` |
+| o1heap | MIT | `o1heap/LICENSE` |
+| SIMDe | MIT | `simde/COPYING` |
+| aes_128 | MIT | `aes_128/LICENSE` |
+| Vulkan Memory Allocator | MIT | `vulkan-memory-allocator/LICENSE.txt` |
+| CLI11 | BSD 3-Clause | `cli11/LICENSE` |
+| Tracy | BSD 3-Clause | `tracy/LICENSE` |
+| glslang | BSD 3-Clause and others | `glslang/LICENSE.txt` |
+| xxHash | BSD 2-Clause | `xxHash/LICENSE` |
+| utfcpp | Boost Software License 1.0 | `utfcpp/LICENSE` |
+| Vulkan-Headers | Apache 2.0 / MIT | `vulkan-headers/LICENSE.md` |
+| Vulkan-Loader | Apache 2.0 | `vulkan-loader/LICENSE.txt` |
+| SPIRV-Tools | Apache 2.0 | `spirv-tools/LICENSE` |
+| SPIRV-Headers | MIT-style (Khronos) | `spirv-headers/LICENSE` |
+| stb_image | MIT / public domain | header in `stb/stb_image.h` |
+| RenderDoc in-application API | MIT | header in `renderdoc/renderdoc_app.h` |
+
+Components used only for tests or other platforms (Catch2, MoltenVK) are not part of the Windows executables.
+
+### LGPL components
+
+FFmpeg and libmspack are statically linked into `rexruntime.dll`. As required by the LGPL, the complete
+source code needed to rebuild that library is available: this repository, the ReXGlue SDK submodule at the
+pinned commit, and the patches in `patches/`. You can modify those components and rebuild `rexruntime.dll`
+with the instructions in `README.md`.

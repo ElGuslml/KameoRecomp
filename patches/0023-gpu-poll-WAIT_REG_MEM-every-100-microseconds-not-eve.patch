@@ -1,0 +1,54 @@
+From b8e21202930139b67943f8414bfe814aeba00413 Mon Sep 17 00:00:00 2001
+From: Gustavo Garcia <ggs11@hotmail.es>
+Date: Sat, 17 Oct 2026 16:56:26 -0600
+Subject: [PATCH 23/24] gpu: poll WAIT_REG_MEM every 100 microseconds, not
+ every millisecond
+
+The packet's wait field is the GPU's poll interval in its own clocks: on the
+console the command processor notices the value within microseconds. With
+vsync on, each failed poll slept wait / 0x100 ms (1 ms for the usual 0x100,
+and Windows rounds a Sleep up), so a wait for a value the CPU writes a few
+hundred microseconds later lasted a millisecond or two more. The game's
+threads then wait for the ring behind the command processor.
+
+GRAW waits once a frame for the CPU to clear a word (physical 0x1FCA5004):
+about 160 waits a second at 240 Hz, 3.1 polls and 2.6 ms each. Polling with
+the high-resolution timer every 100 microseconds: its mission 158-160 ->
+163.5-164 FPS. Spinning the first 200 microseconds as well gained nothing
+measurable and burns a core, so it is not done.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/graphics/command_processor.cpp | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/src/graphics/command_processor.cpp b/src/graphics/command_processor.cpp
+index b201754..6186307 100644
+--- a/src/graphics/command_processor.cpp
++++ b/src/graphics/command_processor.cpp
+@@ -1032,6 +1032,9 @@ bool CommandProcessor::ExecutePacketType3_INDIRECT_BUFFER(memory::RingBuffer* re
+   return true;
+ }
+ 
++// How often WAIT_REG_MEM reads the value again while it waits, in microseconds (with vsync on).
++constexpr int64_t kWaitRegMemPollInterval = 100;
++
+ bool CommandProcessor::ExecutePacketType3_WAIT_REG_MEM(memory::RingBuffer* reader, uint32_t packet,
+                                                        uint32_t count) {
+   SCOPE_profile_cpu_f("gpu");
+@@ -1094,7 +1097,11 @@ bool CommandProcessor::ExecutePacketType3_WAIT_REG_MEM(memory::RingBuffer* reade
+           // User wants it fast and dangerous.
+           rex::thread::MaybeYield();
+         } else {
+-          rex::thread::Sleep(std::chrono::milliseconds(wait / 0x100));
++          // The wait field is the GPU's poll interval in its own clocks: the console notices the
++          // value within microseconds. Sleeping wait / 0x100 ms (1 ms, and Windows rounds it up)
++          // made every wait for a value the CPU writes a few hundred microseconds later last a
++          // millisecond or two more, and the game's threads wait for the ring behind it.
++          rex::thread::PreciseSleep(std::chrono::microseconds(kWaitRegMemPollInterval));
+         }
+         rex::thread::SyncMemory();
+         ReturnFromWait();
+-- 
+2.39.0.windows.2
+
