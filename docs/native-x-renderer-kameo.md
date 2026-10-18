@@ -8,8 +8,8 @@ library's [`xdk-d3d-reference.md`](../native_x_renderer/docs/xdk-d3d-reference.m
 [`decisions.md`](../native_x_renderer/docs/decisions.md) (D76, D77).
 
 Status (2026-10-18): mapped, hooked, and verified by the observer at 100 % in the title video, the main menu, a
-video and the first level. With `--native_x_renderer=true` the title video, the menu and the videos draw; the first
-level does not yet ([First frames](#8-first-frames)). Off by default: Kameo draws on the Xenos path.
+video and the first level. With `--native_x_renderer=true` all four draw as on the Xenos path, the first level's light
+glows included ([First frames](#8-first-frames)). Off by default: Kameo draws on the Xenos path.
 
 The XDK library was linked with **link-time code generation (LTCG)**: small D3D functions are inlined into the
 engine (EndVertices, the typed Lock/Unlock thunks, CreateDevice, parts of SetVertexShader, SetPixelShader,
@@ -317,13 +317,21 @@ one-point draws.
 ## 8. First frames
 
 `--native_x_renderer=true` (step 4, 2026-10-18; `src/options.cpp` selects the SDK's Vulkan backend then), at the
-four spots of the verification (`kameo_055`): the title video, the main menu and the level's opening video draw
-as on the Xenos path, at 60 FPS. In the first level the scene is covered by an orange, sky-like gradient, with
-fragments of the HUD and the geometry at the bottom: not investigated yet.
+four spots of the verification. The title video, the main menu and the level's opening video drew as on the Xenos
+path from the first run (`kameo_055`), at 60 FPS. The first level needed two library changes:
+
+| What | Result |
+|---|---|
+| The scene's clear | Kameo clears its scene with `Clear(1, &rect, 0x3F, ...)`, the rectangle being the target's own 1280×720; the library skipped any clear with a rectangle, so the depth kept the previous frame's values, the geometry failed the depth test and an orange, sky-like gradient covered the screen. Library D78: a rectangle that covers the target clears it whole (`kameo_057`). |
+| Light glows | The glow of each light (the torches) is drawn by the count of an occlusion query around a quad that writes no color, depth always, no alpha test (`sub_823550D8`). The SDK turns that depth test off, the draw had no target and was skipped, and every count was 0: no glow, on the Xenos path too. Library D79: inside a query the test is kept; the counts are 25-49 samples per glow at the traced spot and the torches glow (`kameo_060`). |
+| Speed | 60 FPS. The overlay at the first level: the GPU at 18 % and about 50 W with NativeXRenderer, 67 % and about 143 W on the Xenos path (D3D12, 1280×720, the same spot); NativeXRenderer's GPU time 0.64 ms a frame on average. |
+| Draws | 3,849 of 3,850 drawn in the level (1 without targets); 0 textures in unsupported formats; 234 shaders, 245 pipelines. |
 
 ## 9. Open
 
-- **The first level's image** (above): the next step, with RenderDoc captures of NativeXRenderer's Vulkan device.
+- **The Xenos path's glows**: the SDK's backends skip the glows' query draws the same way (D79), so the torches do not
+  glow there either; a shared SDK patch would fix it for the Xenos path.
+- **More of the game**: only the first level's start, the menus and two videos have been seen with NativeXRenderer.
 - **The tessellated draw** `sub_820CF228` (one engine site, `sub_820E58C8`, chosen per object): no call of its own in
   the library and no tessellation in NativeXRenderer; not seen at the traced spots.
 - **The scene resolve** for the antialiasing (`scene_resolve_caller`): to choose from the trace (the scene's
@@ -333,3 +341,4 @@ fragments of the HUD and the geometry at the bottom: not investigated yet.
   `0x820D0174`, every frame).
 - **Present from another thread**: the tiling worker `sub_820D5EC0` can present on a timeout; not seen in the
   traces (every Present on the render thread).
+- **The launcher row** and the default stay for after a full play test.
