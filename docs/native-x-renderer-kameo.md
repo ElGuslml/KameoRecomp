@@ -339,4 +339,6 @@ path from the first run (`kameo_055`), at 60 FPS. The first level needed two lib
   `0x820D0174`, every frame).
 - **Present from another thread**: the tiling worker `sub_820D5EC0` can present on a timeout; not seen in the
   traces (every Present on the render thread).
-- **The launcher row** and the default stay for after a full play test.
+- **The default**: Kameo Launcher has the "Renderer" row (NativeXRenderer marked experimental, its internal
+  resolution tied to the screen or the window, D54) since 2026-10-18; Xenos stays the default until a full play
+  test. No antialiasing row yet: the profile names no scene resolve.

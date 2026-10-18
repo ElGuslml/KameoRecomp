@@ -2,21 +2,27 @@
 // so that kameorecomp.exe starts right away (for example from Steam Big Picture).
 //
 // Plain Win32, no SDK. Reads kameo.toml and kameo_options.toml (next to this exe and
-// kameorecomp.exe), shows language, monitor, display, resolution, render quality, frame rate and
-// graphics API, and saves the choice to kameo_options.toml, which kameorecomp.exe loads at startup
-// (src/options.cpp).
+// kameorecomp.exe), shows language, monitor, display, resolution, renderer, internal resolution,
+// frame rate, anisotropic filtering and graphics API, and saves the choice to kameo_options.toml,
+// which kameorecomp.exe loads at startup (src/options.cpp).
 // "Play" also starts kameorecomp.exe (with the arguments the launcher received) and waits for it
-// to exit, so Steam keeps seeing the game as running. Works with mouse, keyboard or controller
-// (XInput).
+// to exit, so Steam keeps seeing the game as running; "Save" saves and keeps the window open. Works
+// with mouse, keyboard or controller (XInput).
 //
 // Language: the game's (user_language, plus kameo_latin_american_spanish for the two Spanish
 // versions, src/language.cpp); the first time, the Windows display language. The launcher texts
 // follow it (English, German, French, Spanish, Italian; English for the others).
+// Renderer: the SDK's Xenos emulation (the default), or NativeXRenderer (native_x_renderer,
+// experimental in this game), which draws natively on Vulkan at any resolution
+// (native_x_renderer/docs/decisions.md, D37): its internal resolution row is the screen's or the
+// window's, or a lower height (D54); Xenos keeps the whole-number scales of 1280 x 720.
 // Frame rate: 30 FPS (the original present interval) or 60 FPS with the camera fix
-// (src/framerate.cpp).
+// (src/framerate.cpp). Anisotropic filtering: the SDK's anisotropic_override, 16x by default
+// (src/startup.cpp); NativeXRenderer applies it too (D44).
 //
 // Ported from POTCAWERecomp's launcher (launcher/potcawe_launcher.cpp), without its antialiasing
-// option (a fix specific to that game), and the language row from GRAWRecomp's.
+// option (a fix specific to that game), with the language, renderer, internal resolution and
+// anisotropic filtering rows from GRAWRecomp's.
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -29,6 +35,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -63,7 +70,10 @@ struct Options {
   Size window{kGuestWidth, kGuestHeight};  // window size in physical pixels
   int scale = 0;                           // 0 = automatic; 1..kMaxScale = chosen
   bool fps60 = false;                      // kameo_60fps (src/framerate.cpp)
-  bool vulkan = false;                     // gpu_backend = "vulkan" (otherwise "d3d12")
+  int anisotropic = 5;  // anisotropic_override (SDK): 5 = 16x, 4 = 8x, 3 = 4x, 2 = 2x, 0 = off, -1 = the game's
+  bool vulkan = false;  // gpu_backend = "vulkan" (otherwise "d3d12")
+  bool native = false;  // native_x_renderer: NativeXRenderer draws instead of Xenos
+  int native_height = 0;  // native_x_renderer_resolution_scale × 720: the internal resolution's height; 0 = automatic
 };
 
 // --- kameo.toml / kameo_options.toml ---
@@ -207,18 +217,27 @@ struct Texts {
   const wchar_t* window;
   const wchar_t* resolution;
   const wchar_t* monitor_resolution;
+  const wchar_t* renderer;
+  const wchar_t* renderer_xenos;
+  const wchar_t* renderer_native;
+  const wchar_t* experimental;  // a setting not finished, offered for testing
   const wchar_t* quality;
   const wchar_t* automatic;
   const wchar_t* original;
   const wchar_t* framerate;
   const wchar_t* fps30;
   const wchar_t* fps60;
+  const wchar_t* anisotropic;
+  const wchar_t* aniso_off;
+  const wchar_t* aniso_game;  // anisotropic_override = -1: only what the game asks for
   const wchar_t* graphics;
   const wchar_t* quality_hint;
   const wchar_t* vulkan_hint;
+  const wchar_t* native_hint;
   const wchar_t* pad_hint;
   const wchar_t* play;
   const wchar_t* save;
+  const wchar_t* saved;  // on the Save button for a moment after saving
   const wchar_t* quit;
   const wchar_t* game_missing;
   const wchar_t* save_failed;
@@ -236,21 +255,32 @@ const Texts& TextsFor(uint32_t language) {
       L"Window",
       L"Resolution",
       L"(monitor resolution)",
-      L"Render quality",
+      L"Renderer",
+      L"Xenos (emulated)",
+      L"NativeXRenderer",
+      L"experimental",
+      L"Internal resolution",
       L"Automatic",
       L"(original)",
       L"Frame rate",
       L"30 FPS (original)",
       L"60 FPS",
+      L"Anisotropic filtering",
+      L"Off",
+      L"As the game asks (original)",
       L"Graphics API",
       L"The game renders at 1280 × 720 times a whole number (2×, 3×) and the image is fitted "
       L"to the screen. Automatic picks the smallest scale that covers the resolution. 60 FPS "
       L"presents every vblank instead of every second one; the game speed does not change.",
       L"Vulkan has been tested less than DirectX 12 in this game: use it if DirectX 12 gives you "
       L"problems.",
+      L"NativeXRenderer draws the game natively with Vulkan instead of emulating the Xbox 360 GPU, "
+      L"at the internal resolution you choose (Automatic: your screen's or your window's). It is new "
+      L"in this game: choose Xenos if something looks wrong.",
       L"Controller: ↑↓ choose · ←→ change · A play · B quit",
       L"Play",
       L"Save",
+      L"Saved",
       L"Quit",
       L"kameorecomp.exe was not found next to Kameo Launcher.",
       L"Could not save the options to kameo_options.toml.",
@@ -266,21 +296,32 @@ const Texts& TextsFor(uint32_t language) {
       L"Fenster",
       L"Auflösung",
       L"(Monitorauflösung)",
-      L"Renderqualität",
+      L"Renderer",
+      L"Xenos (emuliert)",
+      L"NativeXRenderer",
+      L"experimentell",
+      L"Interne Auflösung",
       L"Automatisch",
       L"(Original)",
       L"Bildrate",
       L"30 FPS (Original)",
       L"60 FPS",
+      L"Anisotrope Filterung",
+      L"Aus",
+      L"Wie vom Spiel angefordert (Original)",
       L"Grafik-API",
       L"Das Spiel rendert in 1280 × 720 mal einer ganzen Zahl (2×, 3×), das Bild wird an den "
       L"Bildschirm angepasst. „Automatisch“ wählt die kleinste Stufe, die die Auflösung abdeckt. "
       L"60 FPS zeigt jedes Vblank ein Bild statt jedes zweite; die Spielgeschwindigkeit bleibt gleich.",
       L"Vulkan ist in diesem Spiel weniger getestet als DirectX 12: nutze es, wenn DirectX 12 "
       L"Probleme macht.",
+      L"NativeXRenderer zeichnet das Spiel nativ mit Vulkan, statt die GPU der Xbox 360 zu emulieren, "
+      L"in der gewählten internen Auflösung („Automatisch“: die deines Bildschirms oder Fensters). In "
+      L"diesem Spiel ist er neu: wähle Xenos, wenn etwas falsch aussieht.",
       L"Controller: ↑↓ wählen · ←→ ändern · A spielen · B beenden",
       L"Spielen",
       L"Speichern",
+      L"Gespeichert",
       L"Beenden",
       L"kameorecomp.exe wurde neben Kameo Launcher nicht gefunden.",
       L"Die Optionen konnten nicht in kameo_options.toml gespeichert werden.",
@@ -296,12 +337,19 @@ const Texts& TextsFor(uint32_t language) {
       L"Fenêtre",
       L"Résolution",
       L"(résolution du moniteur)",
-      L"Qualité de rendu",
+      L"Moteur de rendu",
+      L"Xenos (émulé)",
+      L"NativeXRenderer",
+      L"expérimental",
+      L"Résolution interne",
       L"Automatique",
       L"(d'origine)",
       L"Fréquence d'images",
       L"30 FPS (d'origine)",
       L"60 FPS",
+      L"Filtrage anisotrope",
+      L"Désactivé",
+      L"Selon le jeu (d'origine)",
       L"API graphique",
       L"Le jeu est rendu en 1280 × 720 multiplié par un nombre entier (2×, 3×) et l'image "
       L"s'adapte à l'écran. « Automatique » choisit la plus petite échelle qui couvre la "
@@ -309,9 +357,13 @@ const Texts& TextsFor(uint32_t language) {
       L"jeu ne change pas.",
       L"Vulkan a été moins testé que DirectX 12 dans ce jeu : utilisez-le si DirectX 12 pose "
       L"problème.",
+      L"NativeXRenderer dessine le jeu nativement avec Vulkan au lieu d'émuler le GPU de la Xbox 360, à "
+      L"la résolution interne choisie (« Automatique » : celle de votre écran ou de votre fenêtre). Il "
+      L"est nouveau dans ce jeu : choisissez Xenos si quelque chose s'affiche mal.",
       L"Manette : ↑↓ choisir · ←→ modifier · A jouer · B quitter",
       L"Jouer",
       L"Enregistrer",
+      L"Enregistré",
       L"Quitter",
       L"kameorecomp.exe est introuvable à côté de Kameo Launcher.",
       L"Impossible d'enregistrer les options dans kameo_options.toml.",
@@ -327,21 +379,32 @@ const Texts& TextsFor(uint32_t language) {
       L"Ventana",
       L"Resolución",
       L"(resolución del monitor)",
-      L"Calidad de render",
+      L"Renderizador",
+      L"Xenos (emulado)",
+      L"NativeXRenderer",
+      L"experimental",
+      L"Resolución interna",
       L"Automática",
       L"(original)",
       L"Frecuencia de imagen",
       L"30 FPS (original)",
       L"60 FPS",
+      L"Filtrado anisotrópico",
+      L"Desactivado",
+      L"Lo que pide el juego (original)",
       L"API gráfica",
       L"El juego dibuja a 1280 × 720 por un número entero (2×, 3×) y la imagen se ajusta a la "
       L"pantalla. «Automática» elige la menor escala que cubre la resolución. 60 FPS presenta una "
       L"imagen por vblank en vez de una de cada dos; la velocidad del juego no cambia.",
       L"Vulkan está menos probado que DirectX 12 en este juego: úsalo si DirectX 12 te da "
       L"problemas.",
+      L"NativeXRenderer dibuja el juego de forma nativa con Vulkan en vez de emular la GPU de Xbox 360, "
+      L"a la resolución interna que elijas («Automática»: la de tu pantalla o tu ventana). Es nuevo en "
+      L"este juego: elige Xenos si algo se ve mal.",
       L"Mando: ↑↓ elegir · ←→ cambiar · A jugar · B salir",
       L"Jugar",
       L"Guardar",
+      L"Guardado",
       L"Salir",
       L"No se encontró kameorecomp.exe junto a Kameo Launcher.",
       L"No se pudieron guardar las opciones en kameo_options.toml.",
@@ -357,21 +420,32 @@ const Texts& TextsFor(uint32_t language) {
       L"Finestra",
       L"Risoluzione",
       L"(risoluzione del monitor)",
-      L"Qualità di rendering",
+      L"Renderer",
+      L"Xenos (emulato)",
+      L"NativeXRenderer",
+      L"sperimentale",
+      L"Risoluzione interna",
       L"Automatica",
       L"(originale)",
       L"Frequenza fotogrammi",
       L"30 FPS (originale)",
       L"60 FPS",
+      L"Filtro anisotropico",
+      L"Disattivato",
+      L"Come richiesto dal gioco (originale)",
       L"API grafica",
       L"Il gioco disegna a 1280 × 720 per un numero intero (2×, 3×) e l'immagine si adatta "
       L"allo schermo. «Automatica» sceglie la scala più piccola che copre la risoluzione. 60 FPS "
       L"presenta un'immagine a ogni vblank invece di una su due; la velocità del gioco non cambia.",
       L"Vulkan è meno collaudato di DirectX 12 in questo gioco: usalo se DirectX 12 dà "
       L"problemi.",
+      L"NativeXRenderer disegna il gioco in modo nativo con Vulkan invece di emulare la GPU della Xbox "
+      L"360, alla risoluzione interna scelta («Automatica»: quella del tuo schermo o della tua finestra). "
+      L"In questo gioco è nuovo: scegli Xenos se qualcosa appare sbagliato.",
       L"Controller: ↑↓ scegli · ←→ cambia · A gioca · B esci",
       L"Gioca",
       L"Salva",
+      L"Salvato",
       L"Esci",
       L"kameorecomp.exe non trovato accanto a Kameo Launcher.",
       L"Impossibile salvare le opzioni in kameo_options.toml.",
@@ -547,6 +621,33 @@ Size AutoScale(Size output) {
   return {axis(width, kGuestWidth), axis(height, kGuestHeight)};
 }
 
+// NativeXRenderer's render size (D37, D54), as the renderer computes it from its swap chain
+// (native_x_renderer/src/renderer.cpp): the 16:9 rectangle inside the output (Kameo does not widen its cameras,
+// so another aspect ratio gets bars, as on the Xenos path). Its height is the rectangle's, or `height` when one
+// is chosen (native_x_renderer_resolution_scale = height / 720); at least the game's own 1280x720.
+Size NativeRenderSize(Size output, int height) {
+  double fit = std::min(double(output.first) / kGuestWidth, double(output.second) / kGuestHeight);
+  double scale = std::max(height > 0 ? double(height) / kGuestHeight : fit, 1.0);
+  return {int(std::floor(kGuestWidth * scale + 0.5)), int(std::floor(kGuestHeight * scale + 0.5))};
+}
+
+// The internal resolutions NativeXRenderer's row offers, as heights (D54): 0 (automatic: the output's), then the
+// usual heights below it, down to the game's own 720 lines. `keep` (a height the options file named) is offered
+// too if it is in that range. Nothing above the output's: no supersampling.
+std::vector<int> NativeHeights(Size output, int keep) {
+  int highest = NativeRenderSize(output, 0).second;
+  std::vector<int> heights;
+  for (int height : {2160, 1800, 1440, 1080, 900, kGuestHeight, keep}) {
+    if (height >= kGuestHeight && height < highest &&
+        std::find(heights.begin(), heights.end(), height) == heights.end()) {
+      heights.push_back(height);
+    }
+  }
+  std::sort(heights.begin(), heights.end(), std::greater<>());
+  heights.insert(heights.begin(), 0);
+  return heights;
+}
+
 // --- Window ---
 
 enum ControlId : int {
@@ -560,10 +661,14 @@ enum ControlId : int {
   kIdResolution,
   kIdLanguageLabel,
   kIdLanguage,
+  kIdRendererLabel,
+  kIdRenderer,
   kIdQualityLabel,
   kIdQuality,
   kIdFramerateLabel,
   kIdFramerate,
+  kIdAnisotropicLabel,
+  kIdAnisotropic,
   kIdBackendLabel,
   kIdBackend,
   kIdHint,
@@ -572,18 +677,23 @@ enum ControlId : int {
 };
 
 // Option rows (top to bottom) and buttons (left to right), for the controller.
-constexpr int kRowIds[] = {kIdLanguage, kIdMonitor,   kIdDisplay, kIdResolution,
-                           kIdQuality,  kIdFramerate, kIdBackend};
+constexpr int kRowIds[] = {kIdLanguage, kIdMonitor,   kIdDisplay,     kIdResolution, kIdRenderer,
+                           kIdQuality,  kIdFramerate, kIdAnisotropic, kIdBackend};
 constexpr int kButtonIds[] = {IDOK, kIdSave, IDCANCEL};
 constexpr int kRows[][2] = {{kIdLanguageLabel, kIdLanguage},
                             {kIdMonitorLabel, kIdMonitor},
                             {kIdDisplayLabel, kIdDisplay},
                             {kIdResolutionLabel, kIdResolution},
+                            {kIdRendererLabel, kIdRenderer},
                             {kIdQualityLabel, kIdQuality},
                             {kIdFramerateLabel, kIdFramerate},
+                            {kIdAnisotropicLabel, kIdAnisotropic},
                             {kIdBackendLabel, kIdBackend}};
 
-enum class Result { kQuit, kSave, kPlay };
+// The anisotropic filtering row's values (anisotropic_override), top to bottom.
+constexpr int kAnisotropicValues[] = {5, 4, 3, 2, 0, -1};
+
+enum class Result { kQuit, kPlay };
 
 enum PadDirection : int { kPadNone, kPadUp, kPadDown, kPadLeft, kPadRight };
 
@@ -595,6 +705,8 @@ struct Launcher {
   std::vector<Size> window_sizes;  // of the chosen monitor (physical pixels)
   UINT primary_dpi = 96;           // the SDK converts window_width/height with the primary's DPI
   bool has_vulkan = false;         // vulkan-1.dll present (ships with the video driver)
+  std::filesystem::path options_path;  // kameo_options.toml: Save writes it at once
+  std::vector<int> native_heights;     // NativeXRenderer's internal resolution row, as heights (0: automatic)
   HWND hwnd = nullptr;
   HFONT font = nullptr;
   HFONT title_font = nullptr;
@@ -660,10 +772,12 @@ void Refresh(Launcher& l) {
   SetWindowTextW(Item(l, kIdMonitorLabel), t.monitor);
   SetWindowTextW(Item(l, kIdDisplayLabel), t.display);
   SetWindowTextW(Item(l, kIdResolutionLabel), t.resolution);
+  SetWindowTextW(Item(l, kIdRendererLabel), t.renderer);
   SetWindowTextW(Item(l, kIdQualityLabel), t.quality);
   SetWindowTextW(Item(l, kIdFramerateLabel), t.framerate);
+  SetWindowTextW(Item(l, kIdAnisotropicLabel), t.anisotropic);
   SetWindowTextW(Item(l, kIdBackendLabel), t.graphics);
-  SetWindowTextW(Item(l, kIdHint), o.vulkan ? t.vulkan_hint : t.quality_hint);
+  SetWindowTextW(Item(l, kIdHint), o.native ? t.native_hint : o.vulkan ? t.vulkan_hint : t.quality_hint);
   SetWindowTextW(Item(l, kIdPadHint), t.pad_hint);
   SetWindowTextW(Item(l, IDOK), t.play);
   SetWindowTextW(Item(l, kIdSave), t.save);
@@ -716,21 +830,61 @@ void Refresh(Launcher& l) {
   }
   EnableWindow(resolution, o.display == kWindow);
 
-  std::vector<std::wstring> qualities = {std::wstring(t.automatic) + L" — " +
-                                         RenderText(AutoScale(OutputSize(l)), t)};
-  for (int scale = 1; scale <= kMaxScale; ++scale) {
-    qualities.push_back(RenderText({scale, scale}, t));
+  // NativeXRenderer needs Vulkan (it draws through DiligentCore's Vulkan backend).
+  std::vector<std::wstring> renderers = {t.renderer_xenos};
+  if (l.has_vulkan) {
+    renderers.push_back(std::wstring(t.renderer_native) + L" (" + t.experimental + L")");
   }
-  FillCombo(Item(l, kIdQuality), qualities, o.scale);
+  FillCombo(Item(l, kIdRenderer), renderers, o.native ? 1 : 0);
+
+  // With NativeXRenderer the internal resolution row is its own (D54), tied to the screen or the window, and the
+  // graphics API row shows what it uses (Vulkan), disabled; the choices for Xenos are kept.
+  Size output = OutputSize(l);
+  if (o.native) {
+    // Automatic, then lower heights; a height that is no longer offered (another monitor or window) becomes
+    // automatic.
+    l.native_heights = NativeHeights(output, l.o.native_height);
+    if (std::find(l.native_heights.begin(), l.native_heights.end(), l.o.native_height) == l.native_heights.end()) {
+      l.o.native_height = 0;
+    }
+    std::vector<std::wstring> sizes;
+    int selected = 0;
+    for (size_t i = 0; i < l.native_heights.size(); ++i) {
+      Size size = NativeRenderSize(output, l.native_heights[i]);
+      std::wstring text = SizeText(size);
+      if (!l.native_heights[i]) {
+        text = std::wstring(t.automatic) + L" — " + text;
+      } else if (size == Size{kGuestWidth, kGuestHeight}) {
+        text += std::wstring(L"  ") + t.original;
+      }
+      sizes.push_back(text);
+      if (l.native_heights[i] == o.native_height) selected = int(i);
+    }
+    FillCombo(Item(l, kIdQuality), sizes, selected);
+    FillCombo(Item(l, kIdBackend), {L"Vulkan"}, 0);
+  } else {
+    std::vector<std::wstring> qualities = {std::wstring(t.automatic) + L" — " + RenderText(AutoScale(output), t)};
+    for (int scale = 1; scale <= kMaxScale; ++scale) {
+      qualities.push_back(RenderText({scale, scale}, t));
+    }
+    FillCombo(Item(l, kIdQuality), qualities, o.scale);
+    // Proper names: the same in every language.
+    std::vector<std::wstring> backends = {L"DirectX 12"};
+    if (l.has_vulkan) {
+      backends.emplace_back(L"Vulkan");
+    }
+    FillCombo(Item(l, kIdBackend), backends, o.vulkan ? 1 : 0);
+  }
+  if (o.native && GetFocus() == Item(l, kIdBackend)) {
+    SetFocus(Item(l, kIdRenderer));
+  }
+  EnableWindow(Item(l, kIdBackend), !o.native);
 
   FillCombo(Item(l, kIdFramerate), {t.fps30, t.fps60}, o.fps60 ? 1 : 0);
 
-  // Proper names: the same in every language.
-  std::vector<std::wstring> backends = {L"DirectX 12"};
-  if (l.has_vulkan) {
-    backends.emplace_back(L"Vulkan");
-  }
-  FillCombo(Item(l, kIdBackend), backends, o.vulkan ? 1 : 0);
+  FillCombo(Item(l, kIdAnisotropic), {L"16×", L"8×", L"4×", L"2×", t.aniso_off, t.aniso_game},
+            int(std::find(std::begin(kAnisotropicValues), std::end(kAnisotropicValues), o.anisotropic) -
+                std::begin(kAnisotropicValues)));
 }
 
 // Copies the selection of list id into l.o and refreshes the window.
@@ -763,14 +917,26 @@ void OnSelectionChange(Launcher& l, int id) {
         o.window = l.window_sizes[index];
       }
       break;
+    case kIdRenderer:
+      o.native = l.has_vulkan && index == 1;
+      break;
     case kIdQuality:
-      o.scale = std::clamp(index, 0, kMaxScale);
+      if (o.native) {
+        if (index < int(l.native_heights.size())) o.native_height = l.native_heights[index];
+      } else {
+        o.scale = std::clamp(index, 0, kMaxScale);
+      }
       break;
     case kIdFramerate:
       o.fps60 = index == 1;
       break;
+    case kIdAnisotropic:
+      o.anisotropic = kAnisotropicValues[std::clamp(index, 0, int(std::size(kAnisotropicValues)) - 1)];
+      break;
     case kIdBackend:
-      o.vulkan = l.has_vulkan && index == 1;
+      if (!o.native) {
+        o.vulkan = l.has_vulkan && index == 1;
+      }
       break;
   }
   Refresh(l);
@@ -778,7 +944,7 @@ void OnSelectionChange(Launcher& l, int id) {
 
 // Positions in pixels at 96 DPI; scaled with the monitor DPI.
 constexpr int kClientWidth = 560;
-constexpr int kClientHeight = 474;
+constexpr int kClientHeight = 546;  // nine rows
 
 void Layout(Launcher& l, UINT dpi) {
   auto s = [dpi](int v) { return MulDiv(v, int(dpi), 96); };
@@ -987,6 +1153,11 @@ void PollPad(Launcher& l) {
   }
 }
 
+bool SaveOptions(const std::filesystem::path& path, const Launcher& l);
+
+// Timers: the controller's polling, and the Save button's "saved" text.
+constexpr UINT_PTR kPadTimer = 1, kSavedTimer = 2;
+
 LRESULT CALLBACK LauncherProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
   if (msg == WM_NCCREATE) {
     auto* create = reinterpret_cast<CREATESTRUCTW*>(lparam);
@@ -1004,10 +1175,17 @@ LRESULT CALLBACK LauncherProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           l->result = Result::kPlay;
           DestroyWindow(hwnd);
           return 0;
-        case kIdSave:
-          l->result = Result::kSave;
-          DestroyWindow(hwnd);
+        case kIdSave: {
+          // Saved at once, and the window stays open: the button says so for a moment.
+          const Texts& t = TextsFor(l->o.language);
+          if (SaveOptions(l->options_path, *l)) {
+            SetWindowTextW(Item(*l, kIdSave), t.saved);
+            SetTimer(hwnd, kSavedTimer, 1500, nullptr);
+          } else {
+            MessageBoxW(hwnd, t.save_failed, L"Kameo Launcher", MB_OK | MB_ICONERROR);
+          }
           return 0;
+        }
         case IDCANCEL:
           l->result = Result::kQuit;
           DestroyWindow(hwnd);
@@ -1021,6 +1199,11 @@ LRESULT CALLBACK LauncherProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       break;
     }
     case WM_TIMER:
+      if (wparam == kSavedTimer) {
+        KillTimer(hwnd, kSavedTimer);
+        SetWindowTextW(Item(*l, kIdSave), TextsFor(l->o.language).save);
+        return 0;
+      }
       PollPad(*l);
       return 0;
     case DM_GETDEFID:
@@ -1045,14 +1228,15 @@ LRESULT CALLBACK LauncherProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
       DestroyWindow(hwnd);
       return 0;
     case WM_DESTROY:
-      KillTimer(hwnd, 1);
+      KillTimer(hwnd, kPadTimer);
+      KillTimer(hwnd, kSavedTimer);
       PostQuitMessage(0);
       return 0;
   }
   return DefWindowProcW(hwnd, msg, wparam, lparam);
 }
 
-// Shows the launcher until Play, Save or Quit is pressed (l.result).
+// Shows the launcher until Play or Quit is pressed (l.result); Save saves without closing it.
 void ShowLauncher(Launcher& l, HINSTANCE instance) {
   INITCOMMONCONTROLSEX icc = {sizeof(icc), ICC_STANDARD_CLASSES};
   InitCommonControlsEx(&icc);
@@ -1114,7 +1298,7 @@ void ShowLauncher(Launcher& l, HINSTANCE instance) {
   Refresh(l);
   Layout(l, GetDpiForWindow(l.hwnd));
   if (l.xinput_get_state) {
-    SetTimer(l.hwnd, 1, 16, nullptr);
+    SetTimer(l.hwnd, kPadTimer, 16, nullptr);
   }
 
   ShowWindow(l.hwnd, SW_SHOWNORMAL);
@@ -1164,6 +1348,13 @@ Options OptionsFromConfig(const Config& c, UINT primary_dpi) {
   }
   o.fps60 = GetBool(c, "kameo_60fps", false);
   o.vulkan = GetString(c, "gpu_backend") == "vulkan";
+  o.native = GetBool(c, "native_x_renderer", false);
+  double native_scale = std::strtod(GetString(c, "native_x_renderer_resolution_scale").c_str(), nullptr);
+  o.native_height = native_scale > 0.0 ? int(std::lround(native_scale * kGuestHeight)) : 0;
+  // Without the key, the game's default (src/startup.cpp adds it to kameo.toml at the next start): 16x.
+  // 1 (1x) shows as off; above 5, 16x.
+  int anisotropic = GetInt(c, "anisotropic_override", 5);
+  o.anisotropic = anisotropic < 0 ? -1 : anisotropic == 1 ? 0 : std::min(anisotropic, 5);
   if (GetString(c, "launcher_render_scale") == "auto") {
     o.scale = 0;
   } else if (int scale = GetInt(c, "launcher_render_scale", 0); scale >= 1) {
@@ -1226,14 +1417,37 @@ bool SaveOptions(const std::filesystem::path& path, const Launcher& l) {
     f << "launcher_render_scale = " << o.scale << "\n";
   }
   // resolution_scale = 1 so that draw_resolution_scale_x/y win (even if kameo.toml says
-  // otherwise).
+  // otherwise). With NativeXRenderer the SDK's backend only keeps the GPU in sync, at 1x;
+  // launcher_render_scale keeps the choice for Xenos.
+  if (o.native) {
+    scale = {1, 1};
+  }
   f << "resolution_scale = 1\n";
   f << "draw_resolution_scale_x = " << scale.first << "\n";
   f << "draw_resolution_scale_y = " << scale.second << "\n";
   // Present every vblank (60 FPS) instead of every second one, with the camera fix
   // (src/framerate.cpp).
   f << "kameo_60fps = " << boolean(o.fps60) << "\n";
+  // With NativeXRenderer the game selects Vulkan itself (src/options.cpp); this is the choice for Xenos.
   f << "gpu_backend = \"" << (o.vulkan ? "vulkan" : "d3d12") << "\"\n";
+  // Anisotropic filtering for textures with mipmaps, sharper at oblique angles (SDK cvar, applied by both
+  // renderers): 5 = 16x, 4 = 8x, 3 = 4x, 2 = 2x, 0 = off, -1 = only what the game asks for.
+  f << "anisotropic_override = " << o.anisotropic << "\n";
+  // NativeXRenderer (native_x_renderer/): draw natively on Vulkan instead of emulating the GPU.
+  f << "native_x_renderer = " << boolean(o.native) << "\n";
+  f << "# native_x_renderer_resolution_scale: its internal resolution, as the height over 720 (2 = 1440\n"
+       "# lines); 0 = the screen's or the window's. native_x_renderer_fill_screen: false, the 16:9 image with\n"
+       "# bars on another aspect ratio (Kameo does not widen its cameras).\n";
+  {
+    char native_scale[32];
+    std::snprintf(native_scale, sizeof(native_scale), "%.6f",
+                  o.native_height > 0 ? double(o.native_height) / kGuestHeight : 0.0);
+    std::string text = native_scale;
+    text.erase(text.find_last_not_of('0') + 1);
+    if (text.back() == '.') text.pop_back();
+    f << "native_x_renderer_resolution_scale = " << text << "\n";
+  }
+  f << "native_x_renderer_fill_screen = false\n";
   return bool(f);
 }
 
@@ -1309,6 +1523,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
   ReadToml(options_path, config);
 
   Launcher l;
+  l.options_path = options_path;
   l.monitors = EnumerateMonitors();
   l.primary_dpi = l.monitors.front().dpi;
   l.o = OptionsFromConfig(config, l.primary_dpi);
@@ -1321,6 +1536,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
     FreeLibrary(vulkan);
   }
   l.o.vulkan = l.o.vulkan && l.has_vulkan;
+  l.o.native = l.o.native && l.has_vulkan;
   for (const wchar_t* dll : {L"xinput1_4.dll", L"xinput9_1_0.dll"}) {
     if (HMODULE xinput = LoadLibraryW(dll)) {
       l.xinput_get_state =

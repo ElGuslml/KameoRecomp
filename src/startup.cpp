@@ -59,6 +59,10 @@ render_target_draw_clears = false
 # every page uploaded by the CPU is re-uploaded the next frame even if it did not change. false is
 # the original Xenia behavior (true is a hack for one game).
 clear_memory_page_state = false
+# Anisotropic filtering for textures with mipmaps, sharper at oblique angles (both renderers):
+# 5 = 16x, 4 = 8x, 3 = 4x (the SDK default), 2 = 2x, 0 = off, -1 = only what the game asks. Kameo
+# Launcher's "Anisotropic filtering" row sets it.
+anisotropic_override = 5
 )";
 
 uint32_t Crc32(const std::vector<char>& data) {

@@ -26,10 +26,13 @@ compiled; the Xbox 360 GPU is emulated by ReXGlue's Xenos backend (derived from 
   Castle so far.
 - **Game language** chosen in the launcher: English, French, German, Italian, Spanish (Spain or Latin
   America), Japanese, Korean or Traditional Chinese ([`docs/language.md`](docs/language.md)).
-- **Kameo Launcher**: language, monitor, fullscreen / borderless / window, window resolution, render quality,
-  frame rate (30 / 60 FPS) and graphics API. Works with mouse, keyboard or controller. ReXGlue renders the game's 1280×720 frame at a whole
-  multiple per axis (2×, 3×) and fits the image to the screen. "Automatic" picks the smallest scale that
-  covers your screen.
+- **Kameo Launcher**: language, monitor, fullscreen / borderless / window, window resolution, renderer,
+  internal resolution, frame rate (30 / 60 FPS), anisotropic filtering (16× by default) and graphics API. Works
+  with mouse, keyboard or controller; "Save" keeps the window open. With Xenos (the emulated GPU, the default)
+  ReXGlue renders the game's 1280×720 frame at a whole multiple per axis (2×, 3×) and fits the image to the
+  screen; "Automatic" picks the smallest scale that covers your screen. With
+  [NativeXRenderer](docs/native-x-renderer-kameo.md) (experimental, Vulkan) the internal resolution is your
+  screen's or your window's ("Automatic"), or a lower height.
 - [`docs/`](docs/README.md) will have a short note on each problem found and what was done about it.
 
 ## Requirements
@@ -94,7 +97,8 @@ Kameo Launcher. You can also add `Kameo Launcher.exe` to change options from the
 
 Command-line options (`--name=value`, for example Steam launch options) win over both files:
 `--fullscreen=false --window_width=1920 --window_height=1080`,
-`--draw_resolution_scale_x=2 --draw_resolution_scale_y=2`, `--gpu_backend=vulkan`, `--kameo_60fps=true`, `--user_language=4` (French; see
+`--draw_resolution_scale_x=2 --draw_resolution_scale_y=2`, `--gpu_backend=vulkan`, `--kameo_60fps=true`,
+`--native_x_renderer=true`, `--anisotropic_override=0` (off; 5 = 16×), `--user_language=4` (French; see
 [`docs/language.md`](docs/language.md)).
 
 ## How the SDK is modified

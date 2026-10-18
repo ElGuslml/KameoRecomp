@@ -48,7 +48,8 @@ void LoadLauncherOptions(const std::filesystem::path& options_path,
 
   bool fullscreen = rex::cvar::Query<bool>("fullscreen");
   REXLOG_INFO("[options] monitor={} scale={}x{} display={} window={}x{} video_mode={}x{} "
-              "letterbox={} 60fps={} gpu_backend={} native_x_renderer={} language={}{}",
+              "letterbox={} 60fps={} gpu_backend={} anisotropic={} native_x_renderer={} (resolution_scale={}) "
+              "language={}{}",
               rex::cvar::Query<int32_t>("monitor"),
               rex::cvar::Query<int32_t>("draw_resolution_scale_x"),
               rex::cvar::Query<int32_t>("draw_resolution_scale_y"),
@@ -59,7 +60,9 @@ void LoadLauncherOptions(const std::filesystem::path& options_path,
               rex::cvar::Query<int32_t>("video_mode_width"),
               rex::cvar::Query<int32_t>("video_mode_height"),
               rex::cvar::Query<bool>("present_letterbox"), rex::cvar::Query<bool>("kameo_60fps"),
-              rex::cvar::Query<std::string>("gpu_backend"), rex::cvar::Query<bool>("native_x_renderer"),
+              rex::cvar::Query<std::string>("gpu_backend"), rex::cvar::Query<int32_t>("anisotropic_override"),
+              rex::cvar::Query<bool>("native_x_renderer"),
+              rex::cvar::Query<double>("native_x_renderer_resolution_scale"),
               rex::cvar::Query<uint32_t>("user_language"),
               rex::cvar::Query<bool>("kameo_latin_american_spanish") ? " (Latin American)" : "");
 }
