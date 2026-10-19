@@ -24,13 +24,16 @@ compiled; the Xbox 360 GPU is emulated by ReXGlue's Xenos backend (derived from 
 - **60 FPS option**, with the automatic camera following fixed for it
   ([`docs/frame-rate.md`](docs/frame-rate.md)). Off by default; tested only in the first part of Thorn's
   Castle so far.
+- **Ultrawide** (Hor+): on a screen or window wider than 16:9 the game sees more to the sides, and the HUD,
+  menus and videos stay 16:9 in the center (both renderers, [`docs/ultrawide.md`](docs/ultrawide.md)).
 - **Game language** chosen in the launcher: English, French, German, Italian, Spanish (Spain or Latin
   America), Japanese, Korean or Traditional Chinese ([`docs/language.md`](docs/language.md)).
 - **Kameo Launcher**: language, monitor, fullscreen / borderless / window, window resolution, renderer,
-  internal resolution, frame rate (30 / 60 FPS), antialiasing, anisotropic filtering (16× by default) and graphics API. Works
+  aspect ratio (16:9 / ultrawide), internal resolution, frame rate (30 / 60 FPS), antialiasing, anisotropic
+  filtering (16× by default) and graphics API. Works
   with mouse, keyboard or controller; "Save" keeps the window open. With Xenos (the emulated GPU, the default)
   ReXGlue renders the game's 1280×720 frame at a whole multiple per axis (2×, 3×) and fits the image to the
-  screen; "Automatic" picks the smallest scale that covers your screen. With
+  screen; "Automatic" picks the smallest scale that covers your screen (3840×1440 on a 3440×1440 ultrawide). With
   [NativeXRenderer](docs/native-x-renderer-kameo.md) (experimental, Vulkan) the internal resolution is your
   screen's or your window's ("Automatic"), or a lower height, with SMAA or FXAA on the scene (the HUD stays sharp).
 - [`docs/`](docs/README.md) will have a short note on each problem found and what was done about it.
@@ -93,12 +96,12 @@ Kameo Launcher. You can also add `Kameo Launcher.exe` to change options from the
 | File (next to `kameorecomp.exe`) | What it holds |
 |---|---|
 | `kameo.toml` | Base settings. Created with the defaults if it is missing; a default setting the file lacks is appended at startup. |
-| `kameo_options.toml` | What Kameo Launcher saves (language, monitor, display, window size, render scale, frame rate, API). Loaded after `kameo.toml`. |
+| `kameo_options.toml` | What Kameo Launcher saves (language, monitor, display, window size, renderer, aspect ratio, render scale or internal resolution, frame rate, antialiasing, anisotropic filtering, API). Loaded after `kameo.toml`. |
 
 Command-line options (`--name=value`, for example Steam launch options) win over both files:
 `--fullscreen=false --window_width=1920 --window_height=1080`,
 `--draw_resolution_scale_x=2 --draw_resolution_scale_y=2`, `--gpu_backend=vulkan`, `--kameo_60fps=true`,
-`--native_x_renderer=true`, `--anisotropic_override=0` (off; 5 = 16×), `--user_language=4` (French; see
+`--native_x_renderer=true`, `--kameo_ultrawide=true`, `--anisotropic_override=0` (off; 5 = 16×), `--user_language=4` (French; see
 [`docs/language.md`](docs/language.md)).
 
 ## How the SDK is modified
@@ -139,7 +142,8 @@ message explains the change:
 [NativeXRenderer](native_x_renderer/README.md) (`native_x_renderer/`, a submodule: a native renderer that hooks the
 game's Direct3D calls, developed on POTCAWERecomp and used by GRAWRecomp) brings its own SDK patches
 (`native_x_renderer/sdk_patches/`), applied after this series. They change nothing while NativeXRenderer is off.
-Its integration into Kameo has just started: the game still draws on the Xenos path.
+In Kameo it is experimental: Kameo Launcher's "Renderer" row chooses it, Xenos stays the default
+([`docs/native-x-renderer-kameo.md`](docs/native-x-renderer-kameo.md)).
 
 ## Credits
 

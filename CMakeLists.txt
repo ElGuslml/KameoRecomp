@@ -66,6 +66,7 @@ set(KAMEO_SOURCES
     src/native_x_renderer_kameo.cpp
     src/options.cpp
     src/startup.cpp
+    src/widescreen.cpp
 )
 
 if(WIN32)

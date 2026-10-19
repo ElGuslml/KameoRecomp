@@ -63,6 +63,10 @@ clear_memory_page_state = false
 # 5 = 16x, 4 = 8x, 3 = 4x (the SDK default), 2 = 2x, 0 = off, -1 = only what the game asks. Kameo
 # Launcher's "Anisotropic filtering" row sets it.
 anisotropic_override = 5
+# NativeXRenderer (native_x_renderer = true, Kameo Launcher's "Renderer" row) renders at the aspect ratio of
+# a screen that is not 16:9 only with this on; Kameo's ultrawide hooks widen the cameras for a wider screen,
+# not a taller one. Kameo Launcher turns it on with "Ultrawide" on a wider screen. false = 16:9 with bars.
+native_x_renderer_fill_screen = false
 )";
 
 uint32_t Crc32(const std::vector<char>& data) {

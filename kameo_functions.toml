@@ -88,3 +88,40 @@ registers = ["f8", "f6", "f31"]
 address = 0x820B5230   # cmplwi cr6,r31,5 (after bl XGetLanguage, mr r31,r3, bl XGetGameRegion)
 name = "KameoLanguageHook"
 registers = ["r31", "r3"]
+
+# Ultrawide displays (src/widescreen.cpp), when kameo_ultrawide = true (the presenter stretches the 1280x720
+# image) or NativeXRenderer fills a wider output; otherwise the hooks change nothing. The 3D views see more
+# to the sides: sub_820DFD38 builds the perspective projection (r3 = the matrix, f1 = vertical fov, f2 = aspect
+# ratio, f3/f4 = near/far; D3DXMatrixPerspectiveFovLH style) and sub_820ED110 a camera's culling frustum from
+# the same fov and aspect ratio; both widen 16:9.
+[[midasm_hook]]
+address = 0x820DFD38   # mflr r12 (entry of sub_820DFD38)
+name = "KameoProjectionAspectHook"
+registers = ["f2"]
+[[midasm_hook]]
+address = 0x820ED16C   # li r5,252 (after lfs f12,4(r3): the camera's aspect ratio)
+name = "KameoFrustumAspectHook"
+registers = ["f12"]
+# The 2D layer (HUD, menus, pause menu) kept at 16:9 in the center (kameo_ultrawide_hud): it is drawn through
+# off-center orthographic projections of the screen in 640x480 or 1280x720 units, built by sub_820DFE20
+# (f1 = top, f2 = bottom, f3 = left, f4 = right; text, menus) and by D3DXMatrixOrthoOffCenterLH at 0x8251CFF0
+# (f1 = left, f2 = right, f3 = bottom, f4 = top; the HUD's sprites). The hooks narrow left/right around the
+# center while the game draws into the 1280x720 screen. sub_8224B118 fills a rectangle through sub_820DFE20: one
+# over the whole screen (a fade) is left as it is. sub_82265558 draws a video frame in 1280x720 units
+# (f1 = left, f3 = horizontal scale): kept at 16:9 with black sides.
+[[midasm_hook]]
+address = 0x820DFE20   # lis r11,-32248 (entry of sub_820DFE20)
+name = "KameoOrthoAspectHook"
+registers = ["f1", "f2", "f3", "f4"]
+[[midasm_hook]]
+address = 0x8251CFF0   # lis r11,-32248 (entry of D3DXMatrixOrthoOffCenterLH)
+name = "KameoD3DXOrthoAspectHook"
+registers = ["f1", "f2", "f3", "f4"]
+[[midasm_hook]]
+address = 0x8224B118   # mflr r12 (entry of sub_8224B118)
+name = "KameoFillAspectHook"
+registers = ["f1", "f2", "f3", "f4", "r9"]
+[[midasm_hook]]
+address = 0x82265558   # mflr r12 (entry of sub_82265558)
+name = "KameoVideoAspectHook"
+registers = ["f1", "f3"]

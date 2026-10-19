@@ -46,9 +46,20 @@ void LoadLauncherOptions(const std::filesystem::path& options_path,
     REXLOG_INFO("[options] gpu_backend set to vulkan: NativeXRenderer draws");
   }
 
+  // Ultrawide on the Xenos path (src/widescreen.cpp): the cameras see with the window's aspect ratio, so the
+  // presenter must stretch the 1280x720 image over the window instead of showing it 16:9 with bars. Kameo
+  // Launcher writes both; this covers kameo_ultrawide given alone (the command line). NativeXRenderer fills the
+  // window itself (native_x_renderer_fill_screen).
+  if (rex::cvar::Query<bool>("kameo_ultrawide") && !rex::cvar::Query<bool>("native_x_renderer") &&
+      rex::cvar::Query<bool>("present_letterbox")) {
+    rex::cvar::SetFlagByName("present_letterbox", "false");
+    REXLOG_INFO("[options] present_letterbox set to false: kameo_ultrawide stretches the image");
+  }
+
   bool fullscreen = rex::cvar::Query<bool>("fullscreen");
   REXLOG_INFO("[options] monitor={} scale={}x{} display={} window={}x{} video_mode={}x{} "
-              "letterbox={} 60fps={} gpu_backend={} anisotropic={} native_x_renderer={} (resolution_scale={}) "
+              "letterbox={} ultrawide={} 60fps={} gpu_backend={} anisotropic={} native_x_renderer={} "
+              "(resolution_scale={} fill_screen={}) "
               "language={}{}",
               rex::cvar::Query<int32_t>("monitor"),
               rex::cvar::Query<int32_t>("draw_resolution_scale_x"),
@@ -59,10 +70,12 @@ void LoadLauncherOptions(const std::filesystem::path& options_path,
               rex::cvar::Query<int32_t>("window_width"), rex::cvar::Query<int32_t>("window_height"),
               rex::cvar::Query<int32_t>("video_mode_width"),
               rex::cvar::Query<int32_t>("video_mode_height"),
-              rex::cvar::Query<bool>("present_letterbox"), rex::cvar::Query<bool>("kameo_60fps"),
+              rex::cvar::Query<bool>("present_letterbox"), rex::cvar::Query<bool>("kameo_ultrawide"),
+              rex::cvar::Query<bool>("kameo_60fps"),
               rex::cvar::Query<std::string>("gpu_backend"), rex::cvar::Query<int32_t>("anisotropic_override"),
               rex::cvar::Query<bool>("native_x_renderer"),
               rex::cvar::Query<double>("native_x_renderer_resolution_scale"),
+              rex::cvar::Query<bool>("native_x_renderer_fill_screen"),
               rex::cvar::Query<uint32_t>("user_language"),
               rex::cvar::Query<bool>("kameo_latin_american_spanish") ? " (Latin American)" : "");
 }

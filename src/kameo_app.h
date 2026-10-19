@@ -17,6 +17,7 @@
 #include "native_x_renderer_kameo.h"
 #include "options.h"
 #include "startup.h"
+#include "widescreen.h"
 
 class KameoApp : public rex::ReXApp {
  public:
@@ -69,13 +70,20 @@ class KameoApp : public rex::ReXApp {
   }
 
   // Window title (the SDK sets "<app name> <SDK build stamp>"), then NativeXRenderer, before the guest starts: its
-  // hooks (src/native_x_renderer_kameo.cpp) are pass-throughs until it is initialized.
+  // hooks (src/native_x_renderer_kameo.cpp) are pass-throughs until it is initialized; then ultrawide
+  // (src/widescreen.cpp): the cameras' aspect ratio follows the window, or NativeXRenderer's when it draws.
   void OnPostSetup() override {
     if (window()) {
       window()->SetTitle("Kameo: Elements of Power");
     }
     native_x_renderer::Initialize(kameo::NativeXRendererProfile(), runtime() ? runtime()->graphics_system() : nullptr,
                                   window(), runtime() ? runtime()->cache_root() : std::filesystem::path());
+    if (window()) {
+      kameo::SetOutputSize(window()->GetActualPhysicalWidth(), window()->GetActualPhysicalHeight());
+    }
+  }
+  void OnWindowPixelSizeChanged(uint32_t pixel_width, uint32_t pixel_height) override {
+    kameo::SetOutputSize(pixel_width, pixel_height);
   }
 
   // On exit, log whether the game asked to launch another executable.

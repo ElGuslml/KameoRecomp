@@ -80,6 +80,9 @@ const native_x_renderer::Profile& NativeXRendererProfile() {
     // antialiasing runs twice in play. None of the menus' or videos' resolves come from there.
     p.scene_resolve_caller = 0x820DC4B0;
     p.scene_resolve_outer_caller = 0x8227AE6C;
+    // The ultrawide hooks (src/widescreen.cpp) widen the 16:9 cameras by AspectFactor() and keep the 2D layer and
+    // the videos at 16:9 in the center: NativeXRenderer may fill a wider output (native_x_renderer_fill_screen).
+    p.widens_cameras = true;
     native_x_renderer::DeviceLayout& d = p.device;
     // GRAW's (XDK 2417) offsets up to +12964: five dirty masks from +16 (VS constants, PS constants, then fetch
     // slots in the high half, slot 0 in bit 63, bool/loop constants and the 0x2000 group); the register groups;

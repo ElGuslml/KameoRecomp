@@ -2,8 +2,8 @@
 // so that kameorecomp.exe starts right away (for example from Steam Big Picture).
 //
 // Plain Win32, no SDK. Reads kameo.toml and kameo_options.toml (next to this exe and
-// kameorecomp.exe), shows language, monitor, display, resolution, renderer, internal resolution,
-// frame rate, antialiasing, anisotropic filtering and graphics API, and saves the choice to
+// kameorecomp.exe), shows language, monitor, display, resolution, renderer, aspect ratio, internal
+// resolution, frame rate, antialiasing, anisotropic filtering and graphics API, and saves the choice to
 // kameo_options.toml, which kameorecomp.exe loads at startup (src/options.cpp).
 // "Play" also starts kameorecomp.exe (with the arguments the launcher received) and waits for it
 // to exit, so Steam keeps seeing the game as running; "Save" saves and keeps the window open. Works
@@ -17,13 +17,17 @@
 // (native_x_renderer/docs/decisions.md, D37): its internal resolution row is the screen's or the
 // window's, or a lower height (D54), and it has its own antialiasing (SMAA, FXAA or off, D41, D65);
 // Xenos keeps the whole-number scales of 1280 x 720 and the game's look (no antialiasing).
+// Aspect ratio: 16:9 (bars on a wider screen) or ultrawide (kameo_ultrawide, src/widescreen.cpp): the game's
+// cameras see more to the sides, the HUD and the videos stay 16:9 in the center; Xenos stretches its image over
+// the screen (present_letterbox = false, a render scale per axis) and NativeXRenderer renders at the screen's
+// aspect ratio (native_x_renderer_fill_screen, D43). Only on a screen or a window wider than 16:9.
 // Frame rate: 30 FPS (the original present interval) or 60 FPS with the camera fix
 // (src/framerate.cpp). Anisotropic filtering: the SDK's anisotropic_override, 16x by default
 // (src/startup.cpp); NativeXRenderer applies it too (D44).
 //
 // Ported from POTCAWERecomp's launcher (launcher/potcawe_launcher.cpp), without its Xenos
 // antialiasing option (a fix specific to that game), with the language, renderer, internal
-// resolution, antialiasing and anisotropic filtering rows from GRAWRecomp's.
+// resolution, aspect ratio, antialiasing and anisotropic filtering rows from GRAWRecomp's.
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -71,6 +75,7 @@ struct Options {
   Size window{kGuestWidth, kGuestHeight};  // window size in physical pixels
   int scale = 0;                           // 0 = automatic; 1..kMaxScale = chosen
   bool fps60 = false;                      // kameo_60fps (src/framerate.cpp)
+  bool ultrawide = false;                  // kameo_ultrawide (src/widescreen.cpp), native_x_renderer_fill_screen
   int anisotropic = 5;  // anisotropic_override (SDK): 5 = 16x, 4 = 8x, 3 = 4x, 2 = 2x, 0 = off, -1 = the game's
   bool vulkan = false;  // gpu_backend = "vulkan" (otherwise "d3d12")
   bool native = false;  // native_x_renderer: NativeXRenderer draws instead of Xenos
@@ -223,6 +228,9 @@ struct Texts {
   const wchar_t* renderer_xenos;
   const wchar_t* renderer_native;
   const wchar_t* experimental;  // a setting not finished, offered for testing
+  const wchar_t* aspect;
+  const wchar_t* aspect_original;
+  const wchar_t* aspect_ultrawide;
   const wchar_t* quality;
   const wchar_t* automatic;
   const wchar_t* original;
@@ -264,6 +272,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Xenos (emulated)",
       L"NativeXRenderer",
       L"experimental",
+      L"Aspect ratio",
+      L"16:9 (original)",
+      L"Ultrawide (full width)",
       L"Internal resolution",
       L"Automatic",
       L"(original)",
@@ -308,6 +319,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Xenos (emuliert)",
       L"NativeXRenderer",
       L"experimentell",
+      L"Seitenverhältnis",
+      L"16:9 (Original)",
+      L"Ultrawide (volle Breite)",
       L"Interne Auflösung",
       L"Automatisch",
       L"(Original)",
@@ -352,6 +366,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Xenos (émulé)",
       L"NativeXRenderer",
       L"expérimental",
+      L"Format d'image",
+      L"16:9 (d'origine)",
+      L"Ultra-large (toute la largeur)",
       L"Résolution interne",
       L"Automatique",
       L"(d'origine)",
@@ -397,6 +414,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Xenos (emulado)",
       L"NativeXRenderer",
       L"experimental",
+      L"Formato de imagen",
+      L"16:9 (original)",
+      L"Ultrapanorámico (todo el ancho)",
       L"Resolución interna",
       L"Automática",
       L"(original)",
@@ -441,6 +461,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Xenos (emulato)",
       L"NativeXRenderer",
       L"sperimentale",
+      L"Formato immagine",
+      L"16:9 (originale)",
+      L"Ultrawide (tutta la larghezza)",
       L"Risoluzione interna",
       L"Automatica",
       L"(originale)",
@@ -625,15 +648,23 @@ bool Is16x9(Size size) {
          int64_t(size.second) * 16;
 }
 
-// Render scale per axis: the smallest one that covers (with 10 % tolerance) the 16:9 image inside
-// the output (the presenter letterboxes other aspect ratios).
-Size AutoScale(Size output) {
+// Wider than 16:9 (outside the margin): the only case where stretching the image makes sense.
+bool IsWiderThan16x9(Size size) {
+  return !Is16x9(size) && int64_t(size.first) * 9 > int64_t(size.second) * 16;
+}
+
+// Render scale per axis: the smallest one that covers (with 10 % tolerance) the image in the
+// output. Normally the image is the 16:9 rectangle inside the output (letterboxed); when stretched
+// (ultrawide on an output wider than 16:9) it is the whole output: 3440x1440 -> 3x2 = 3840x1440.
+Size AutoScale(Size output, bool stretched) {
   double width = output.first;
   double height = output.second;
-  if (width * 9 > height * 16) {
-    width = height * 16 / 9;
-  } else {
-    height = width * 9 / 16;
+  if (!stretched) {
+    if (width * 9 > height * 16) {
+      width = height * 16 / 9;
+    } else {
+      height = width * 9 / 16;
+    }
   }
   auto axis = [](double size, int guest) {
     return std::clamp(int(std::ceil(size / guest - 0.1)), 1, kMaxScale);
@@ -641,24 +672,32 @@ Size AutoScale(Size output) {
   return {axis(width, kGuestWidth), axis(height, kGuestHeight)};
 }
 
-// NativeXRenderer's render size (D37, D54), as the renderer computes it from its swap chain
-// (native_x_renderer/src/renderer.cpp): the 16:9 rectangle inside the output (Kameo does not widen its cameras,
-// so another aspect ratio gets bars, as on the Xenos path). Its height is the rectangle's, or `height` when one
-// is chosen (native_x_renderer_resolution_scale = height / 720); at least the game's own 1280x720.
-Size NativeRenderSize(Size output, int height) {
-  double fit = std::min(double(output.first) / kGuestWidth, double(output.second) / kGuestHeight);
-  double scale = std::max(height > 0 ? double(height) / kGuestHeight : fit, 1.0);
-  return {int(std::floor(kGuestWidth * scale + 0.5)), int(std::floor(kGuestHeight * scale + 0.5))};
+// NativeXRenderer's render size (D37, D43, D54), as the renderer computes it from its swap chain
+// (native_x_renderer/src/renderer.cpp). The image fills the output (`fill`, native_x_renderer_fill_screen: the
+// height sets the scale, the width follows from the output's aspect ratio; Kameo's ultrawide hooks widen the
+// cameras to match), or is the 16:9 rectangle inside it. Its height is the output's (or the rectangle's), or
+// `height` when one is chosen (native_x_renderer_resolution_scale = height / 720); at least the game's own
+// 1280x720 on each axis.
+Size NativeRenderSize(Size output, bool fill, int height) {
+  double guest_aspect = double(kGuestWidth) / kGuestHeight;
+  double output_aspect = output.second ? double(output.first) / output.second : guest_aspect;
+  fill = fill && std::abs(output_aspect / guest_aspect - 1.0) > 0.01;
+  double factor = fill ? output_aspect / guest_aspect : 1.0;
+  double fit = fill ? double(output.second) / kGuestHeight
+                    : std::min(double(output.first) / kGuestWidth, double(output.second) / kGuestHeight);
+  double scale = std::max(height > 0 ? double(height) / kGuestHeight : fit, 1.0 / std::min(factor, 1.0));
+  return {int(std::floor(kGuestWidth * scale * factor + 0.5)), int(std::floor(kGuestHeight * scale + 0.5))};
 }
 
 // The internal resolutions NativeXRenderer's row offers, as heights (D54): 0 (automatic: the output's), then the
-// usual heights below it, down to the game's own 720 lines. `keep` (a height the options file named) is offered
-// too if it is in that range. Nothing above the output's: no supersampling.
-std::vector<int> NativeHeights(Size output, int keep) {
-  int highest = NativeRenderSize(output, 0).second;
+// usual heights below it, down to the lowest the image allows (720 lines). `keep` (a height the options file
+// named) is offered too if it is in that range. Nothing above the output's: no supersampling.
+std::vector<int> NativeHeights(Size output, bool fill, int keep) {
+  int highest = NativeRenderSize(output, fill, 0).second;
+  int lowest = NativeRenderSize(output, fill, kGuestHeight).second;
   std::vector<int> heights;
-  for (int height : {2160, 1800, 1440, 1080, 900, kGuestHeight, keep}) {
-    if (height >= kGuestHeight && height < highest &&
+  for (int height : {2160, 1800, 1440, 1080, 900, 720, lowest, keep}) {
+    if (height >= lowest && height < highest &&
         std::find(heights.begin(), heights.end(), height) == heights.end()) {
       heights.push_back(height);
     }
@@ -683,6 +722,8 @@ enum ControlId : int {
   kIdLanguage,
   kIdRendererLabel,
   kIdRenderer,
+  kIdAspectLabel,
+  kIdAspect,
   kIdQualityLabel,
   kIdQuality,
   kIdFramerateLabel,
@@ -699,14 +740,15 @@ enum ControlId : int {
 };
 
 // Option rows (top to bottom) and buttons (left to right), for the controller.
-constexpr int kRowIds[] = {kIdLanguage,  kIdMonitor,      kIdDisplay,     kIdResolution, kIdRenderer,
-                           kIdQuality,   kIdFramerate,    kIdAntialiasing, kIdAnisotropic, kIdBackend};
+constexpr int kRowIds[] = {kIdLanguage, kIdMonitor,   kIdDisplay,      kIdResolution,  kIdRenderer, kIdAspect,
+                           kIdQuality,  kIdFramerate, kIdAntialiasing, kIdAnisotropic, kIdBackend};
 constexpr int kButtonIds[] = {IDOK, kIdSave, IDCANCEL};
 constexpr int kRows[][2] = {{kIdLanguageLabel, kIdLanguage},
                             {kIdMonitorLabel, kIdMonitor},
                             {kIdDisplayLabel, kIdDisplay},
                             {kIdResolutionLabel, kIdResolution},
                             {kIdRendererLabel, kIdRenderer},
+                            {kIdAspectLabel, kIdAspect},
                             {kIdQualityLabel, kIdQuality},
                             {kIdFramerateLabel, kIdFramerate},
                             {kIdAntialiasingLabel, kIdAntialiasing},
@@ -759,8 +801,13 @@ Size OutputSize(const Launcher& l) {
   return l.o.display == kWindow ? l.o.window : CurrentMonitor(l).size;
 }
 
+// The 16:9 image is stretched over the whole output (present_letterbox = false).
+bool Stretched(const Launcher& l) {
+  return l.o.ultrawide && IsWiderThan16x9(OutputSize(l));
+}
+
 Size EffectiveScale(const Launcher& l) {
-  return l.o.scale == 0 ? AutoScale(OutputSize(l)) : Size{l.o.scale, l.o.scale};
+  return l.o.scale == 0 ? AutoScale(OutputSize(l), Stretched(l)) : Size{l.o.scale, l.o.scale};
 }
 
 HWND Item(const Launcher& l, int id) {
@@ -802,6 +849,7 @@ void Refresh(Launcher& l) {
   SetWindowTextW(Item(l, kIdDisplayLabel), t.display);
   SetWindowTextW(Item(l, kIdResolutionLabel), t.resolution);
   SetWindowTextW(Item(l, kIdRendererLabel), t.renderer);
+  SetWindowTextW(Item(l, kIdAspectLabel), t.aspect);
   SetWindowTextW(Item(l, kIdQualityLabel), t.quality);
   SetWindowTextW(Item(l, kIdFramerateLabel), t.framerate);
   SetWindowTextW(Item(l, kIdAntialiasingLabel), t.antialiasing);
@@ -867,20 +915,24 @@ void Refresh(Launcher& l) {
   }
   FillCombo(Item(l, kIdRenderer), renderers, o.native ? 1 : 0);
 
+  // Ultrawide is the same choice for both renderers: Xenos stretches its 16:9 image over the output, and
+  // NativeXRenderer renders at the output's aspect ratio; the game's hooks widen the cameras for either.
+  FillCombo(Item(l, kIdAspect), {t.aspect_original, t.aspect_ultrawide}, o.ultrawide ? 1 : 0);
+
   // With NativeXRenderer the internal resolution row is its own (D54), tied to the screen or the window, and the
   // graphics API row shows what it uses (Vulkan), disabled; the choices for Xenos are kept.
   Size output = OutputSize(l);
   if (o.native) {
     // Automatic, then lower heights; a height that is no longer offered (another monitor or window) becomes
     // automatic.
-    l.native_heights = NativeHeights(output, l.o.native_height);
+    l.native_heights = NativeHeights(output, Stretched(l), l.o.native_height);
     if (std::find(l.native_heights.begin(), l.native_heights.end(), l.o.native_height) == l.native_heights.end()) {
       l.o.native_height = 0;
     }
     std::vector<std::wstring> sizes;
     int selected = 0;
     for (size_t i = 0; i < l.native_heights.size(); ++i) {
-      Size size = NativeRenderSize(output, l.native_heights[i]);
+      Size size = NativeRenderSize(output, Stretched(l), l.native_heights[i]);
       std::wstring text = SizeText(size);
       if (!l.native_heights[i]) {
         text = std::wstring(t.automatic) + L" — " + text;
@@ -895,7 +947,7 @@ void Refresh(Launcher& l) {
     FillCombo(Item(l, kIdAntialiasing), {L"SMAA", L"FXAA", t.aa_off}, o.native_aa);
     FillCombo(Item(l, kIdBackend), {L"Vulkan"}, 0);
   } else {
-    std::vector<std::wstring> qualities = {std::wstring(t.automatic) + L" — " + RenderText(AutoScale(output), t)};
+    std::vector<std::wstring> qualities = {std::wstring(t.automatic) + L" — " + RenderText(AutoScale(output, Stretched(l)), t)};
     for (int scale = 1; scale <= kMaxScale; ++scale) {
       qualities.push_back(RenderText({scale, scale}, t));
     }
@@ -955,6 +1007,9 @@ void OnSelectionChange(Launcher& l, int id) {
     case kIdRenderer:
       o.native = l.has_vulkan && index == 1;
       break;
+    case kIdAspect:
+      o.ultrawide = index == 1;
+      break;
     case kIdQuality:
       if (o.native) {
         if (index < int(l.native_heights.size())) o.native_height = l.native_heights[index];
@@ -984,7 +1039,7 @@ void OnSelectionChange(Launcher& l, int id) {
 
 // Positions in pixels at 96 DPI; scaled with the monitor DPI.
 constexpr int kClientWidth = 560;
-constexpr int kClientHeight = 582;  // ten rows
+constexpr int kClientHeight = 618;  // eleven rows
 
 void Layout(Launcher& l, UINT dpi) {
   auto s = [dpi](int v) { return MulDiv(v, int(dpi), 96); };
@@ -1387,6 +1442,7 @@ Options OptionsFromConfig(const Config& c, UINT primary_dpi) {
     o.latin_american = SystemLatinAmericanSpanish();
   }
   o.fps60 = GetBool(c, "kameo_60fps", false);
+  o.ultrawide = GetBool(c, "kameo_ultrawide", false);
   o.vulkan = GetString(c, "gpu_backend") == "vulkan";
   o.native = GetBool(c, "native_x_renderer", false);
   double native_scale = std::strtod(GetString(c, "native_x_renderer_resolution_scale").c_str(), nullptr);
@@ -1455,6 +1511,10 @@ bool SaveOptions(const std::filesystem::path& path, const Launcher& l) {
   }
   f << "launcher_window_width = " << window_width << "\n";
   f << "launcher_window_height = " << window_height << "\n";
+  // Ultrawide: the cameras use the window's aspect ratio and the 16:9 image is stretched over the
+  // whole output (no bars); only when the output is wider than 16:9.
+  f << "kameo_ultrawide = " << boolean(o.ultrawide) << "\n";
+  f << "present_letterbox = " << boolean(!Stretched(l)) << "\n";
   if (o.scale == 0) {
     f << "launcher_render_scale = \"auto\"\n";
   } else {
@@ -1479,9 +1539,10 @@ bool SaveOptions(const std::filesystem::path& path, const Launcher& l) {
   f << "anisotropic_override = " << o.anisotropic << "\n";
   // NativeXRenderer (native_x_renderer/): draw natively on Vulkan instead of emulating the GPU.
   f << "native_x_renderer = " << boolean(o.native) << "\n";
-  f << "# native_x_renderer_resolution_scale: its internal resolution, as the height over 720 (2 = 1440\n"
-       "# lines); 0 = the screen's or the window's. native_x_renderer_fill_screen: false, the 16:9 image with\n"
-       "# bars on another aspect ratio (Kameo does not widen its cameras).\n";
+  f << "# native_x_renderer_fill_screen: NativeXRenderer renders at the aspect ratio of an ultrawide screen or\n"
+       "# window (true, with kameo_ultrawide), or keeps 16:9 with bars (false). native_x_renderer_resolution_scale:\n"
+       "# its internal resolution, as the height over 720 (2 = 1440 lines); 0 = the screen's or the window's.\n";
+  f << "native_x_renderer_fill_screen = " << boolean(Stretched(l)) << "\n";
   {
     char native_scale[32];
     std::snprintf(native_scale, sizeof(native_scale), "%.6f",
@@ -1491,7 +1552,6 @@ bool SaveOptions(const std::filesystem::path& path, const Launcher& l) {
     if (text.back() == '.') text.pop_back();
     f << "native_x_renderer_resolution_scale = " << text << "\n";
   }
-  f << "native_x_renderer_fill_screen = false\n";
   // NativeXRenderer's own antialiasing on the finished scene, before the HUD: smaa, fxaa or off.
   f << "native_x_renderer_antialiasing = \""
     << kNativeAntialiasing[std::clamp(o.native_aa, 0, int(std::size(kNativeAntialiasing)) - 1)] << "\"\n";
