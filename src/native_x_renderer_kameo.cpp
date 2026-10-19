@@ -71,8 +71,15 @@ const native_x_renderer::Profile& NativeXRendererProfile() {
     native_x_renderer::Profile p;
     p.game = "Kameo: Elements of Power (4D5307D2)";
     p.xdk_version = "2.0.2099";
-    p.output_width = 1280;  // to be confirmed by the trace (the front buffer at Present)
+    p.output_width = 1280;  // the scene and its resolves are 1280x720 (the trace's resolve rectangles)
     p.output_height = 720;
+    // The finished scene, before the HUD: the 1280x720 resolve of the bloom composite into 0x82758880, which the
+    // last post-processing pass draws onto the screen with the glows before the HUD. Every post-processing pass
+    // resolves through the helper library's full-screen pass (return address 0x820DC4B0), called by the
+    // post-processing driver (0x8227AE6C); the first pass (the scene with its fog) matches too, so the
+    // antialiasing runs twice in play. None of the menus' or videos' resolves come from there.
+    p.scene_resolve_caller = 0x820DC4B0;
+    p.scene_resolve_outer_caller = 0x8227AE6C;
     native_x_renderer::DeviceLayout& d = p.device;
     // GRAW's (XDK 2417) offsets up to +12964: five dirty masks from +16 (VS constants, PS constants, then fetch
     // slots in the high half, slot 0 in bit 63, bool/loop constants and the 0x2000 group); the register groups;

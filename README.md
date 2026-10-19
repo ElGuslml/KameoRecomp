@@ -27,12 +27,12 @@ compiled; the Xbox 360 GPU is emulated by ReXGlue's Xenos backend (derived from 
 - **Game language** chosen in the launcher: English, French, German, Italian, Spanish (Spain or Latin
   America), Japanese, Korean or Traditional Chinese ([`docs/language.md`](docs/language.md)).
 - **Kameo Launcher**: language, monitor, fullscreen / borderless / window, window resolution, renderer,
-  internal resolution, frame rate (30 / 60 FPS), anisotropic filtering (16× by default) and graphics API. Works
+  internal resolution, frame rate (30 / 60 FPS), antialiasing, anisotropic filtering (16× by default) and graphics API. Works
   with mouse, keyboard or controller; "Save" keeps the window open. With Xenos (the emulated GPU, the default)
   ReXGlue renders the game's 1280×720 frame at a whole multiple per axis (2×, 3×) and fits the image to the
   screen; "Automatic" picks the smallest scale that covers your screen. With
   [NativeXRenderer](docs/native-x-renderer-kameo.md) (experimental, Vulkan) the internal resolution is your
-  screen's or your window's ("Automatic"), or a lower height.
+  screen's or your window's ("Automatic"), or a lower height, with SMAA or FXAA on the scene (the HUD stays sharp).
 - [`docs/`](docs/README.md) will have a short note on each problem found and what was done about it.
 
 ## Requirements

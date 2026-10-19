@@ -3,8 +3,8 @@
 //
 // Plain Win32, no SDK. Reads kameo.toml and kameo_options.toml (next to this exe and
 // kameorecomp.exe), shows language, monitor, display, resolution, renderer, internal resolution,
-// frame rate, anisotropic filtering and graphics API, and saves the choice to kameo_options.toml,
-// which kameorecomp.exe loads at startup (src/options.cpp).
+// frame rate, antialiasing, anisotropic filtering and graphics API, and saves the choice to
+// kameo_options.toml, which kameorecomp.exe loads at startup (src/options.cpp).
 // "Play" also starts kameorecomp.exe (with the arguments the launcher received) and waits for it
 // to exit, so Steam keeps seeing the game as running; "Save" saves and keeps the window open. Works
 // with mouse, keyboard or controller (XInput).
@@ -15,14 +15,15 @@
 // Renderer: the SDK's Xenos emulation (the default), or NativeXRenderer (native_x_renderer,
 // experimental in this game), which draws natively on Vulkan at any resolution
 // (native_x_renderer/docs/decisions.md, D37): its internal resolution row is the screen's or the
-// window's, or a lower height (D54); Xenos keeps the whole-number scales of 1280 x 720.
+// window's, or a lower height (D54), and it has its own antialiasing (SMAA, FXAA or off, D41, D65);
+// Xenos keeps the whole-number scales of 1280 x 720 and the game's look (no antialiasing).
 // Frame rate: 30 FPS (the original present interval) or 60 FPS with the camera fix
 // (src/framerate.cpp). Anisotropic filtering: the SDK's anisotropic_override, 16x by default
 // (src/startup.cpp); NativeXRenderer applies it too (D44).
 //
-// Ported from POTCAWERecomp's launcher (launcher/potcawe_launcher.cpp), without its antialiasing
-// option (a fix specific to that game), with the language, renderer, internal resolution and
-// anisotropic filtering rows from GRAWRecomp's.
+// Ported from POTCAWERecomp's launcher (launcher/potcawe_launcher.cpp), without its Xenos
+// antialiasing option (a fix specific to that game), with the language, renderer, internal
+// resolution, antialiasing and anisotropic filtering rows from GRAWRecomp's.
 
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -73,6 +74,7 @@ struct Options {
   int anisotropic = 5;  // anisotropic_override (SDK): 5 = 16x, 4 = 8x, 3 = 4x, 2 = 2x, 0 = off, -1 = the game's
   bool vulkan = false;  // gpu_backend = "vulkan" (otherwise "d3d12")
   bool native = false;  // native_x_renderer: NativeXRenderer draws instead of Xenos
+  int native_aa = 0;    // native_x_renderer_antialiasing: an index of kNativeAntialiasing
   int native_height = 0;  // native_x_renderer_resolution_scale × 720: the internal resolution's height; 0 = automatic
 };
 
@@ -227,6 +229,9 @@ struct Texts {
   const wchar_t* framerate;
   const wchar_t* fps30;
   const wchar_t* fps60;
+  const wchar_t* antialiasing;
+  const wchar_t* aa_original;  // Xenos: the game has no antialiasing
+  const wchar_t* aa_off;
   const wchar_t* anisotropic;
   const wchar_t* aniso_off;
   const wchar_t* aniso_game;  // anisotropic_override = -1: only what the game asks for
@@ -265,6 +270,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Frame rate",
       L"30 FPS (original)",
       L"60 FPS",
+      L"Antialiasing",
+      L"None (original)",
+      L"Off",
       L"Anisotropic filtering",
       L"Off",
       L"As the game asks (original)",
@@ -306,6 +314,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Bildrate",
       L"30 FPS (Original)",
       L"60 FPS",
+      L"Kantenglättung",
+      L"Keine (Original)",
+      L"Aus",
       L"Anisotrope Filterung",
       L"Aus",
       L"Wie vom Spiel angefordert (Original)",
@@ -347,6 +358,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Fréquence d'images",
       L"30 FPS (d'origine)",
       L"60 FPS",
+      L"Anticrénelage",
+      L"Aucun (d'origine)",
+      L"Désactivé",
       L"Filtrage anisotrope",
       L"Désactivé",
       L"Selon le jeu (d'origine)",
@@ -389,6 +403,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Frecuencia de imagen",
       L"30 FPS (original)",
       L"60 FPS",
+      L"Antialiasing",
+      L"Ninguno (original)",
+      L"Desactivado",
       L"Filtrado anisotrópico",
       L"Desactivado",
       L"Lo que pide el juego (original)",
@@ -430,6 +447,9 @@ const Texts& TextsFor(uint32_t language) {
       L"Frequenza fotogrammi",
       L"30 FPS (originale)",
       L"60 FPS",
+      L"Antialiasing",
+      L"Nessuno (originale)",
+      L"Disattivato",
       L"Filtro anisotropico",
       L"Disattivato",
       L"Come richiesto dal gioco (originale)",
@@ -667,6 +687,8 @@ enum ControlId : int {
   kIdQuality,
   kIdFramerateLabel,
   kIdFramerate,
+  kIdAntialiasingLabel,
+  kIdAntialiasing,
   kIdAnisotropicLabel,
   kIdAnisotropic,
   kIdBackendLabel,
@@ -677,8 +699,8 @@ enum ControlId : int {
 };
 
 // Option rows (top to bottom) and buttons (left to right), for the controller.
-constexpr int kRowIds[] = {kIdLanguage, kIdMonitor,   kIdDisplay,     kIdResolution, kIdRenderer,
-                           kIdQuality,  kIdFramerate, kIdAnisotropic, kIdBackend};
+constexpr int kRowIds[] = {kIdLanguage,  kIdMonitor,      kIdDisplay,     kIdResolution, kIdRenderer,
+                           kIdQuality,   kIdFramerate,    kIdAntialiasing, kIdAnisotropic, kIdBackend};
 constexpr int kButtonIds[] = {IDOK, kIdSave, IDCANCEL};
 constexpr int kRows[][2] = {{kIdLanguageLabel, kIdLanguage},
                             {kIdMonitorLabel, kIdMonitor},
@@ -687,8 +709,15 @@ constexpr int kRows[][2] = {{kIdLanguageLabel, kIdLanguage},
                             {kIdRendererLabel, kIdRenderer},
                             {kIdQualityLabel, kIdQuality},
                             {kIdFramerateLabel, kIdFramerate},
+                            {kIdAntialiasingLabel, kIdAntialiasing},
                             {kIdAnisotropicLabel, kIdAnisotropic},
                             {kIdBackendLabel, kIdBackend}};
+
+// NativeXRenderer's antialiasing row (native_x_renderer_antialiasing), top to bottom: SMAA or FXAA on the
+// finished scene, before the HUD (D41, D65; the profile names Kameo's bloom composite), or off. DLAA (D47) needs
+// the game's views marked (BeginView / EndViewGeometry), which Kameo does not do yet. The Xenos path draws the
+// game as the console does: Kameo has no antialiasing of its own.
+constexpr const char* kNativeAntialiasing[] = {"smaa", "fxaa", "off"};
 
 // The anisotropic filtering row's values (anisotropic_override), top to bottom.
 constexpr int kAnisotropicValues[] = {5, 4, 3, 2, 0, -1};
@@ -775,6 +804,7 @@ void Refresh(Launcher& l) {
   SetWindowTextW(Item(l, kIdRendererLabel), t.renderer);
   SetWindowTextW(Item(l, kIdQualityLabel), t.quality);
   SetWindowTextW(Item(l, kIdFramerateLabel), t.framerate);
+  SetWindowTextW(Item(l, kIdAntialiasingLabel), t.antialiasing);
   SetWindowTextW(Item(l, kIdAnisotropicLabel), t.anisotropic);
   SetWindowTextW(Item(l, kIdBackendLabel), t.graphics);
   SetWindowTextW(Item(l, kIdHint), o.native ? t.native_hint : o.vulkan ? t.vulkan_hint : t.quality_hint);
@@ -861,6 +891,8 @@ void Refresh(Launcher& l) {
       if (l.native_heights[i] == o.native_height) selected = int(i);
     }
     FillCombo(Item(l, kIdQuality), sizes, selected);
+    // Proper names: the same in every language.
+    FillCombo(Item(l, kIdAntialiasing), {L"SMAA", L"FXAA", t.aa_off}, o.native_aa);
     FillCombo(Item(l, kIdBackend), {L"Vulkan"}, 0);
   } else {
     std::vector<std::wstring> qualities = {std::wstring(t.automatic) + L" — " + RenderText(AutoScale(output), t)};
@@ -868,6 +900,7 @@ void Refresh(Launcher& l) {
       qualities.push_back(RenderText({scale, scale}, t));
     }
     FillCombo(Item(l, kIdQuality), qualities, o.scale);
+    FillCombo(Item(l, kIdAntialiasing), {t.aa_original}, 0);
     // Proper names: the same in every language.
     std::vector<std::wstring> backends = {L"DirectX 12"};
     if (l.has_vulkan) {
@@ -875,10 +908,12 @@ void Refresh(Launcher& l) {
     }
     FillCombo(Item(l, kIdBackend), backends, o.vulkan ? 1 : 0);
   }
-  if (o.native && GetFocus() == Item(l, kIdBackend)) {
-    SetFocus(Item(l, kIdRenderer));
+  for (auto [id, enabled] : {std::pair{kIdBackend, !o.native}, std::pair{kIdAntialiasing, o.native}}) {
+    if (!enabled && GetFocus() == Item(l, id)) {
+      SetFocus(Item(l, kIdRenderer));
+    }
+    EnableWindow(Item(l, id), enabled);
   }
-  EnableWindow(Item(l, kIdBackend), !o.native);
 
   FillCombo(Item(l, kIdFramerate), {t.fps30, t.fps60}, o.fps60 ? 1 : 0);
 
@@ -930,6 +965,11 @@ void OnSelectionChange(Launcher& l, int id) {
     case kIdFramerate:
       o.fps60 = index == 1;
       break;
+    case kIdAntialiasing:
+      if (o.native) {
+        o.native_aa = std::clamp(index, 0, int(std::size(kNativeAntialiasing)) - 1);
+      }
+      break;
     case kIdAnisotropic:
       o.anisotropic = kAnisotropicValues[std::clamp(index, 0, int(std::size(kAnisotropicValues)) - 1)];
       break;
@@ -944,7 +984,7 @@ void OnSelectionChange(Launcher& l, int id) {
 
 // Positions in pixels at 96 DPI; scaled with the monitor DPI.
 constexpr int kClientWidth = 560;
-constexpr int kClientHeight = 546;  // nine rows
+constexpr int kClientHeight = 582;  // ten rows
 
 void Layout(Launcher& l, UINT dpi) {
   auto s = [dpi](int v) { return MulDiv(v, int(dpi), 96); };
@@ -1351,6 +1391,10 @@ Options OptionsFromConfig(const Config& c, UINT primary_dpi) {
   o.native = GetBool(c, "native_x_renderer", false);
   double native_scale = std::strtod(GetString(c, "native_x_renderer_resolution_scale").c_str(), nullptr);
   o.native_height = native_scale > 0.0 ? int(std::lround(native_scale * kGuestHeight)) : 0;
+  std::string native_aa = GetString(c, "native_x_renderer_antialiasing");
+  for (int i = 0; i < int(std::size(kNativeAntialiasing)); ++i) {
+    if (native_aa == kNativeAntialiasing[i]) o.native_aa = i;
+  }
   // Without the key, the game's default (src/startup.cpp adds it to kameo.toml at the next start): 16x.
   // 1 (1x) shows as off; above 5, 16x.
   int anisotropic = GetInt(c, "anisotropic_override", 5);
@@ -1448,6 +1492,9 @@ bool SaveOptions(const std::filesystem::path& path, const Launcher& l) {
     f << "native_x_renderer_resolution_scale = " << text << "\n";
   }
   f << "native_x_renderer_fill_screen = false\n";
+  // NativeXRenderer's own antialiasing on the finished scene, before the HUD: smaa, fxaa or off.
+  f << "native_x_renderer_antialiasing = \""
+    << kNativeAntialiasing[std::clamp(o.native_aa, 0, int(std::size(kNativeAntialiasing)) - 1)] << "\"\n";
   return bool(f);
 }
 

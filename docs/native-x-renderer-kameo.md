@@ -326,14 +326,13 @@ path from the first run (`kameo_055`), at 60 FPS. The first level needed two lib
 | Light glows | The glow of each light (the torches) is drawn by the count of an occlusion query around a quad that writes no color, depth always, no alpha test (`sub_823550D8`). The SDK turns that depth test off, the draw had no target and was skipped, and every count was 0: no glow, on the Xenos path too. Library D79: inside a query the test is kept; the counts are 25-49 samples per glow at the traced spot and the torches glow (`kameo_060`). The Xenos path got the same fix in shared SDK patch 0026 (its pipeline caches also drop that test, so the draw gets a stencil test that always passes and keeps instead): 17-69 samples per glow on D3D12 and Vulkan, the torches glow there too. |
 | Speed | 60 FPS. The overlay at the first level: the GPU at 18 % and about 50 W with NativeXRenderer, 67 % and about 143 W on the Xenos path (D3D12, 1280×720, the same spot); NativeXRenderer's GPU time 0.64 ms a frame on average. |
 | Draws | 3,849 of 3,850 drawn in the level (1 without targets); 0 textures in unsupported formats; 234 shaders, 245 pipelines. |
+| Antialiasing | The frame's post-processing (bloom and glows) is done by the helper library's full-screen passes: the scene with its fog resolved into `0x82758880`, two 426×240 blurs, the bloom composite resolved into `0x82758880` again, a 32×32 luminance and 160×90 glows; the last pass draws `0x82758880` and the glows onto the screen, then the HUD. The profile names that resolve (`scene_resolve_caller` `0x820DC4B0`, the full-screen pass; `scene_resolve_outer_caller` `0x8227AE6C`, the post-processing driver): SMAA or FXAA is applied to the scene and its bloom composite, twice a frame in play (both share the callers), never in the menus or videos; the HUD text is untouched. |
 
 ## 9. Open
 
 - **More of the game**: only the first level's start, the menus and two videos have been seen with NativeXRenderer.
 - **The tessellated draw** `sub_820CF228` (one engine site, `sub_820E58C8`, chosen per object): no call of its own in
   the library and no tessellation in NativeXRenderer; not seen at the traced spots.
-- **The scene resolve** for the antialiasing (`scene_resolve_caller`): to choose from the trace (the scene's
-  1280×720 resolve with flags `0x310`, from `0x820B039C`, is the candidate).
 - **The output size**: 1280×720 in the profile. The scene and its resolves are 1280×720 (the trace's resolve
   rectangles); the front buffer itself is not printed by the trace (Present comes from the XDK's present helper,
   `0x820D0174`, every frame).
@@ -341,4 +340,4 @@ path from the first run (`kameo_055`), at 60 FPS. The first level needed two lib
   traces (every Present on the render thread).
 - **The default**: Kameo Launcher has the "Renderer" row (NativeXRenderer marked experimental, its internal
   resolution tied to the screen or the window, D54) since 2026-10-18; Xenos stays the default until a full play
-  test. No antialiasing row yet: the profile names no scene resolve.
+  test. Its antialiasing row (SMAA, FXAA, off) works with NativeXRenderer since the profile names the scene resolve.
