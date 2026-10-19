@@ -28,8 +28,9 @@ frame is stretched over the screen (anamorphic), and the game is corrected by th
 - **The 2D layer stays 16:9 in the center** (`kameo_ultrawide_hud`). The two builders of its orthographic
   projections (`sub_820DFE20` for text and menus, `D3DXMatrixOrthoOffCenterLH` for the HUD's sprites) get a
   canvas wider by the factor when they cover the whole screen and the game draws into the screen; the menu
-  book's pages, drawn into a 640×480 texture, are left alone. A colored rectangle over the whole screen (a
-  fade, `sub_8224B118`) keeps covering it.
+  book's pages, drawn into a 640×480 texture, are left alone. A colored rectangle across the whole width (a
+  fade, the cinematics' black bars; `sub_8224B118`, `sub_822D19E0`) keeps spanning it. The bars can be removed
+  altogether ([cinematic-bars.md](cinematic-bars.md)).
 - **Videos stay 16:9 in the center** with black sides (`sub_82265558`, the Bink frame).
 
 On the Xenos path the presenter stretches the image (`present_letterbox = false`, set automatically with

@@ -2,7 +2,7 @@
 // so that kameorecomp.exe starts right away (for example from Steam Big Picture).
 //
 // Plain Win32, no SDK. Reads kameo.toml and kameo_options.toml (next to this exe and
-// kameorecomp.exe), shows language, monitor, display, resolution, renderer, aspect ratio, internal
+// kameorecomp.exe), shows language, monitor, display, resolution, renderer, aspect ratio, cinematics, internal
 // resolution, frame rate, antialiasing, anisotropic filtering and graphics API, and saves the choice to
 // kameo_options.toml, which kameorecomp.exe loads at startup (src/options.cpp).
 // "Play" also starts kameorecomp.exe (with the arguments the launcher received) and waits for it
@@ -21,6 +21,8 @@
 // cameras see more to the sides, the HUD and the videos stay 16:9 in the center; Xenos stretches its image over
 // the screen (present_letterbox = false, a render scale per axis) and NativeXRenderer renders at the screen's
 // aspect ratio (native_x_renderer_fill_screen, D43). Only on a screen or a window wider than 16:9.
+// Cinematics: a checkbox that removes the black bars above and below the in-engine cinematics
+// (kameo_no_letterbox, src/cinematics.cpp), at any aspect ratio.
 // Frame rate: 30 FPS (the original present interval) or 60 FPS with the camera fix
 // (src/framerate.cpp). Anisotropic filtering: the SDK's anisotropic_override, 16x by default
 // (src/startup.cpp); NativeXRenderer applies it too (D44).
@@ -76,6 +78,7 @@ struct Options {
   int scale = 0;                           // 0 = automatic; 1..kMaxScale = chosen
   bool fps60 = false;                      // kameo_60fps (src/framerate.cpp)
   bool ultrawide = false;                  // kameo_ultrawide (src/widescreen.cpp), native_x_renderer_fill_screen
+  bool no_letterbox = false;               // kameo_no_letterbox (src/cinematics.cpp)
   int anisotropic = 5;  // anisotropic_override (SDK): 5 = 16x, 4 = 8x, 3 = 4x, 2 = 2x, 0 = off, -1 = the game's
   bool vulkan = false;  // gpu_backend = "vulkan" (otherwise "d3d12")
   bool native = false;  // native_x_renderer: NativeXRenderer draws instead of Xenos
@@ -231,6 +234,8 @@ struct Texts {
   const wchar_t* aspect;
   const wchar_t* aspect_original;
   const wchar_t* aspect_ultrawide;
+  const wchar_t* cinematics;
+  const wchar_t* no_letterbox;  // the cinematics' checkbox
   const wchar_t* quality;
   const wchar_t* automatic;
   const wchar_t* original;
@@ -275,6 +280,8 @@ const Texts& TextsFor(uint32_t language) {
       L"Aspect ratio",
       L"16:9 (original)",
       L"Ultrawide (full width)",
+      L"Cinematics",
+      L"No black bars",
       L"Internal resolution",
       L"Automatic",
       L"(original)",
@@ -322,6 +329,8 @@ const Texts& TextsFor(uint32_t language) {
       L"Seitenverhältnis",
       L"16:9 (Original)",
       L"Ultrawide (volle Breite)",
+      L"Zwischensequenzen",
+      L"Ohne schwarze Balken",
       L"Interne Auflösung",
       L"Automatisch",
       L"(Original)",
@@ -369,6 +378,8 @@ const Texts& TextsFor(uint32_t language) {
       L"Format d'image",
       L"16:9 (d'origine)",
       L"Ultra-large (toute la largeur)",
+      L"Cinématiques",
+      L"Sans bandes noires",
       L"Résolution interne",
       L"Automatique",
       L"(d'origine)",
@@ -417,6 +428,8 @@ const Texts& TextsFor(uint32_t language) {
       L"Formato de imagen",
       L"16:9 (original)",
       L"Ultrapanorámico (todo el ancho)",
+      L"Cinemáticas",
+      L"Sin barras negras",
       L"Resolución interna",
       L"Automática",
       L"(original)",
@@ -464,6 +477,8 @@ const Texts& TextsFor(uint32_t language) {
       L"Formato immagine",
       L"16:9 (originale)",
       L"Ultrawide (tutta la larghezza)",
+      L"Filmati",
+      L"Senza bande nere",
       L"Risoluzione interna",
       L"Automatica",
       L"(originale)",
@@ -724,6 +739,8 @@ enum ControlId : int {
   kIdRenderer,
   kIdAspectLabel,
   kIdAspect,
+  kIdCinematicsLabel,
+  kIdCinematics,
   kIdQualityLabel,
   kIdQuality,
   kIdFramerateLabel,
@@ -740,8 +757,9 @@ enum ControlId : int {
 };
 
 // Option rows (top to bottom) and buttons (left to right), for the controller.
-constexpr int kRowIds[] = {kIdLanguage, kIdMonitor,   kIdDisplay,      kIdResolution,  kIdRenderer, kIdAspect,
-                           kIdQuality,  kIdFramerate, kIdAntialiasing, kIdAnisotropic, kIdBackend};
+constexpr int kRowIds[] = {kIdLanguage,  kIdMonitor,  kIdDisplay,   kIdResolution,   kIdRenderer,
+                           kIdAspect,    kIdCinematics, kIdQuality, kIdFramerate, kIdAntialiasing,
+                           kIdAnisotropic, kIdBackend};
 constexpr int kButtonIds[] = {IDOK, kIdSave, IDCANCEL};
 constexpr int kRows[][2] = {{kIdLanguageLabel, kIdLanguage},
                             {kIdMonitorLabel, kIdMonitor},
@@ -749,11 +767,17 @@ constexpr int kRows[][2] = {{kIdLanguageLabel, kIdLanguage},
                             {kIdResolutionLabel, kIdResolution},
                             {kIdRendererLabel, kIdRenderer},
                             {kIdAspectLabel, kIdAspect},
+                            {kIdCinematicsLabel, kIdCinematics},
                             {kIdQualityLabel, kIdQuality},
                             {kIdFramerateLabel, kIdFramerate},
                             {kIdAntialiasingLabel, kIdAntialiasing},
                             {kIdAnisotropicLabel, kIdAnisotropic},
                             {kIdBackendLabel, kIdBackend}};
+
+// The rows that are a checkbox instead of a list.
+bool IsCheckbox(int id) {
+  return id == kIdCinematics;
+}
 
 // NativeXRenderer's antialiasing row (native_x_renderer_antialiasing), top to bottom: SMAA or FXAA on the
 // finished scene, before the HUD (D41, D65; the profile names Kameo's bloom composite), or off. DLAA (D47) needs
@@ -850,6 +874,8 @@ void Refresh(Launcher& l) {
   SetWindowTextW(Item(l, kIdResolutionLabel), t.resolution);
   SetWindowTextW(Item(l, kIdRendererLabel), t.renderer);
   SetWindowTextW(Item(l, kIdAspectLabel), t.aspect);
+  SetWindowTextW(Item(l, kIdCinematicsLabel), t.cinematics);
+  SetWindowTextW(Item(l, kIdCinematics), t.no_letterbox);
   SetWindowTextW(Item(l, kIdQualityLabel), t.quality);
   SetWindowTextW(Item(l, kIdFramerateLabel), t.framerate);
   SetWindowTextW(Item(l, kIdAntialiasingLabel), t.antialiasing);
@@ -918,6 +944,8 @@ void Refresh(Launcher& l) {
   // Ultrawide is the same choice for both renderers: Xenos stretches its 16:9 image over the output, and
   // NativeXRenderer renders at the output's aspect ratio; the game's hooks widen the cameras for either.
   FillCombo(Item(l, kIdAspect), {t.aspect_original, t.aspect_ultrawide}, o.ultrawide ? 1 : 0);
+  // The same at 16:9 and ultrawide: the scene under the bars is drawn either way.
+  SendMessageW(Item(l, kIdCinematics), BM_SETCHECK, o.no_letterbox ? BST_CHECKED : BST_UNCHECKED, 0);
 
   // With NativeXRenderer the internal resolution row is its own (D54), tied to the screen or the window, and the
   // graphics API row shows what it uses (Vulkan), disabled; the choices for Xenos are kept.
@@ -1039,7 +1067,7 @@ void OnSelectionChange(Launcher& l, int id) {
 
 // Positions in pixels at 96 DPI; scaled with the monitor DPI.
 constexpr int kClientWidth = 560;
-constexpr int kClientHeight = 618;  // eleven rows
+constexpr int kClientHeight = 654;  // twelve rows
 
 void Layout(Launcher& l, UINT dpi) {
   auto s = [dpi](int v) { return MulDiv(v, int(dpi), 96); };
@@ -1073,7 +1101,8 @@ void Layout(Launcher& l, UINT dpi) {
   int y = kRow;
   for (const auto& row : kRows) {
     places.push_back({row[0], kMargin, y + 4, kLabelWidth, 20});
-    places.push_back({row[1], kComboX, y, kComboWidth, kListHeight});
+    places.push_back({row[1], kComboX, y + (IsCheckbox(row[1]) ? 2 : 0), kComboWidth,
+                      IsCheckbox(row[1]) ? 24 : kListHeight});
     y += kRowStep;
   }
   places.push_back({kIdHint, kMargin, y + 2, kTextWidth, 52});
@@ -1115,7 +1144,7 @@ void Press(Launcher& l, int id) {
 // or move between buttons.
 void PadMove(Launcher& l, int direction) {
   for (int id : kRowIds) {
-    SendMessageW(Item(l, id), CB_SHOWDROPDOWN, FALSE, 0);
+    if (!IsCheckbox(id)) SendMessageW(Item(l, id), CB_SHOWDROPDOWN, FALSE, 0);
   }
   int id = FocusedId(l);
   std::vector<int> rows;
@@ -1150,6 +1179,10 @@ void PadMove(Launcher& l, int direction) {
         if (next >= 0 && next < int(std::size(kButtonIds))) {
           SetFocus(Item(l, kButtonIds[next]));
         }
+        break;
+      }
+      if (IsCheckbox(id)) {
+        SendMessageW(Item(l, id), BM_CLICK, 0, 0);  // toggles it and notifies (BN_CLICKED)
         break;
       }
       HWND combo = Item(l, id);
@@ -1240,7 +1273,11 @@ void PollPad(Launcher& l) {
   }
   if (pressed & XINPUT_GAMEPAD_A) {
     int id = FocusedId(l);
-    Press(l, IsButton(id) ? id : IDOK);
+    if (IsCheckbox(id)) {
+      SendMessageW(Item(l, id), BM_CLICK, 0, 0);
+    } else {
+      Press(l, IsButton(id) ? id : IDOK);
+    }
   } else if (pressed & XINPUT_GAMEPAD_START) {
     Press(l, IDOK);
   } else if (pressed & XINPUT_GAMEPAD_B) {
@@ -1285,6 +1322,10 @@ LRESULT CALLBACK LauncherProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
           l->result = Result::kQuit;
           DestroyWindow(hwnd);
           return 0;
+      }
+      if (IsCheckbox(id) && HIWORD(wparam) == BN_CLICKED) {
+        l->o.no_letterbox = SendMessageW(Item(*l, id), BM_GETCHECK, 0, 0) == BST_CHECKED;
+        return 0;
       }
       if (std::find(std::begin(kRowIds), std::end(kRowIds), id) != std::end(kRowIds) &&
           HIWORD(wparam) == CBN_SELCHANGE) {
@@ -1380,8 +1421,12 @@ void ShowLauncher(Launcher& l, HINSTANCE instance) {
   add(WC_STATICW, kIdSubtitle, SS_LEFT);
   for (const auto& row : kRows) {
     add(WC_STATICW, row[0], SS_LEFT);
-    add(WC_COMBOBOXW, row[1],
-        CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP | (row[1] == kRowIds[0] ? WS_GROUP : 0));
+    if (IsCheckbox(row[1])) {
+      add(WC_BUTTONW, row[1], BS_AUTOCHECKBOX | WS_TABSTOP);
+    } else {
+      add(WC_COMBOBOXW, row[1],
+          CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP | (row[1] == kRowIds[0] ? WS_GROUP : 0));
+    }
   }
   add(WC_STATICW, kIdHint, SS_LEFT);
   add(WC_STATICW, kIdPadHint, SS_LEFT | SS_NOPREFIX);
@@ -1443,6 +1488,7 @@ Options OptionsFromConfig(const Config& c, UINT primary_dpi) {
   }
   o.fps60 = GetBool(c, "kameo_60fps", false);
   o.ultrawide = GetBool(c, "kameo_ultrawide", false);
+  o.no_letterbox = GetBool(c, "kameo_no_letterbox", false);
   o.vulkan = GetString(c, "gpu_backend") == "vulkan";
   o.native = GetBool(c, "native_x_renderer", false);
   double native_scale = std::strtod(GetString(c, "native_x_renderer_resolution_scale").c_str(), nullptr);
@@ -1515,6 +1561,8 @@ bool SaveOptions(const std::filesystem::path& path, const Launcher& l) {
   // whole output (no bars); only when the output is wider than 16:9.
   f << "kameo_ultrawide = " << boolean(o.ultrawide) << "\n";
   f << "present_letterbox = " << boolean(!Stretched(l)) << "\n";
+  // Cinematics without the black bars above and below the image (src/cinematics.cpp).
+  f << "kameo_no_letterbox = " << boolean(o.no_letterbox) << "\n";
   if (o.scale == 0) {
     f << "launcher_render_scale = \"auto\"\n";
   } else {

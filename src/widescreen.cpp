@@ -113,9 +113,14 @@ void Narrow(PPCRegister& left, PPCRegister& right, double factor) {
   right.f64 = center + (right.f64 - center) * factor;
 }
 
-// Set by sub_8224B118 when it fills the whole screen (a fade): its projection, the next one built on this
-// thread, is not narrowed.
-thread_local bool g_full_screen_fill = false;
+// Set by the rectangle fills (sub_8224B118, sub_822D19E0) when the rectangle spans the whole width of the screen
+// (a fade, the cinematics' black bars): its projection, the next one built on this thread, is not narrowed, so
+// it still spans the stretched image.
+thread_local bool g_full_width_fill = false;
+
+void MarkFill(double left, double width, double canvas_width) {
+  g_full_width_fill = left <= 0.0 && left + width >= canvas_width;
+}
 
 }  // namespace
 
@@ -143,9 +148,9 @@ void KameoFrustumAspectHook(PPCRegister& f12) {
 // matrix): f1 = top, f2 = bottom, f3 = left, f4 = right, f5/f6 = near/far. The HUD's text and the menus'
 // 2D layer use it.
 void KameoOrthoAspectHook(PPCRegister& f1, PPCRegister& f2, PPCRegister& f3, PPCRegister& f4) {
-  bool full_screen_fill = std::exchange(g_full_screen_fill, false);
+  bool full_width_fill = std::exchange(g_full_width_fill, false);
   double factor = NarrowFactor();
-  if (factor == 1.0 || full_screen_fill || !IsScreenCanvas(f3.f64, f4.f64, f1.f64, f2.f64) ||
+  if (factor == 1.0 || full_width_fill || !IsScreenCanvas(f3.f64, f4.f64, f1.f64, f2.f64) ||
       !DrawsIntoScreen()) {
     return;
   }
@@ -164,11 +169,15 @@ void KameoD3DXOrthoAspectHook(PPCRegister& f1, PPCRegister& f2, PPCRegister& f3,
 
 // [[midasm_hook]] at the entry of sub_8224B118, which fills a rectangle with a color through its own 2D
 // projection (sub_820DFE20): f1 = top, f2 = left, f3 = height, f4 = width, in 640x480 units when r9 != 0,
-// otherwise in the screen's (1280x720). A rectangle over the whole screen (a fade) keeps covering it.
-void KameoFillAspectHook(PPCRegister& f1, PPCRegister& f2, PPCRegister& f3, PPCRegister& f4, PPCRegister& r9) {
-  double width = r9.u32 ? 640.0 : 1280.0, height = r9.u32 ? 480.0 : 720.0;
-  g_full_screen_fill = f1.f64 <= 0.0 && f2.f64 <= 0.0 && f1.f64 + f3.f64 >= height && f2.f64 + f4.f64 >= width;
+// otherwise in the screen's (1280x720). A rectangle across the whole width (a fade) keeps spanning it.
+void KameoFillAspectHook(PPCRegister& f2, PPCRegister& f4, PPCRegister& r9) {
+  MarkFill(f2.f64, f4.f64, r9.u32 ? 640.0 : 1280.0);
 }
+
+// [[midasm_hook]] at the entry of sub_822D19E0, the same kind of fill in the screen's 1280x720 units (its own
+// projection through sub_820DFE20; f2 = left, f4 = width): the cinematics' black bars (src/cinematics.cpp) and
+// full-screen fades.
+void KameoBarAspectHook(PPCRegister& f2, PPCRegister& f4) { MarkFill(f2.f64, f4.f64, 1280.0); }
 
 // [[midasm_hook]] at the entry of sub_82265558, which draws a video frame (Bink) as a rectangle in 1280x720
 // units: f1/f2 = left/top, f3/f4 = scale, r5/r6 = the frame's width/height. Kept at 16:9 in the center:

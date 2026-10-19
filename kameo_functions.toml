@@ -106,9 +106,10 @@ registers = ["f12"]
 # off-center orthographic projections of the screen in 640x480 or 1280x720 units, built by sub_820DFE20
 # (f1 = top, f2 = bottom, f3 = left, f4 = right; text, menus) and by D3DXMatrixOrthoOffCenterLH at 0x8251CFF0
 # (f1 = left, f2 = right, f3 = bottom, f4 = top; the HUD's sprites). The hooks narrow left/right around the
-# center while the game draws into the 1280x720 screen. sub_8224B118 fills a rectangle through sub_820DFE20: one
-# over the whole screen (a fade) is left as it is. sub_82265558 draws a video frame in 1280x720 units
-# (f1 = left, f3 = horizontal scale): kept at 16:9 with black sides.
+# center while the game draws into the 1280x720 screen. sub_8224B118 and sub_822D19E0 fill a rectangle through
+# sub_820DFE20 (f2 = left, f4 = width): one across the whole width (a fade, the cinematics' bars) is left as it
+# is. sub_82265558 draws a video frame in 1280x720 units (f1 = left, f3 = horizontal scale): kept at 16:9 with
+# black sides.
 [[midasm_hook]]
 address = 0x820DFE20   # lis r11,-32248 (entry of sub_820DFE20)
 name = "KameoOrthoAspectHook"
@@ -120,8 +121,25 @@ registers = ["f1", "f2", "f3", "f4"]
 [[midasm_hook]]
 address = 0x8224B118   # mflr r12 (entry of sub_8224B118)
 name = "KameoFillAspectHook"
-registers = ["f1", "f2", "f3", "f4", "r9"]
+registers = ["f2", "f4", "r9"]
+[[midasm_hook]]
+address = 0x822D19E0   # mflr r12 (entry of sub_822D19E0)
+name = "KameoBarAspectHook"
+registers = ["f2", "f4"]
 [[midasm_hook]]
 address = 0x82265558   # mflr r12 (entry of sub_82265558)
 name = "KameoVideoAspectHook"
 registers = ["f1", "f3"]
+
+# Cinematics without the black bars (src/cinematics.cpp): sub_822712E0 draws the letterbox of the in-engine
+# cinematics, two black rectangles of 1/8 of the screen's height through sub_822D19E0 (top and bottom), their
+# height animated by a level at 0x82B70B08 + 3796 that the same code then lowers. With kameo_no_letterbox the hooks
+# skip the two calls only, so the level keeps its course.
+[[midasm_hook]]
+address = 0x822713E4   # bl 0x822d19e0 (the top bar)
+name = "KameoLetterboxBarHook"
+jump_address_on_true = 0x822713E8
+[[midasm_hook]]
+address = 0x8227142C   # bl 0x822d19e0 (the bottom bar)
+name = "KameoLetterboxBarHook"
+jump_address_on_true = 0x82271430
