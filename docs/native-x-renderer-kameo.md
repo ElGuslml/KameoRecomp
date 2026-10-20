@@ -372,7 +372,9 @@ The CSV and the scripts: `local_docs/11-performance-ab.md` (not published).
 - **Frames of 30-50 ms in the videos** with NativeXRenderer (A/B above), not on the Xenos path. Cause found
   (2026-10-20): the game's Bink code locks the video texture and now and then waits a vblank for the GPU, which delays
   its CPU frame by 16 ms on both renderers; the Xenos path presents at the command processor's swaps, which keep the
-  vblank's pace, and NativeXRenderer presents when the game calls Present. Fix: present with the guest's swaps.
+  vblank's pace, and NativeXRenderer presents when the game calls Present. Library D86:
+  `native_x_renderer_present_with_swaps = true` (in `kameo.toml`) shows frames with the guest's swaps: no frame over
+  20 ms in the title video. Off by default until it has been played both ways.
 - **The tessellated draw** `sub_820CF228` (one engine site, `sub_820E58C8`, chosen per object): no call of its own in
   the library and no tessellation in NativeXRenderer; not seen at the traced spots.
 - **The output size**: 1280×720 in the profile. The scene and its resolves are 1280×720 (the trace's resolve
