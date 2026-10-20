@@ -10,4 +10,5 @@ the symptom, the cause, the fix and how to turn the fix off, so that you can che
 | [Ultrawide displays](ultrawide.md) | Working: wider 3D view, HUD and videos kept 16:9 in the center (both renderers) |
 | [Cinematics without black bars](cinematic-bars.md) | Working: launcher checkbox, at 16:9 and ultrawide |
 | [CPU usage: one core at 100 %](cpu-usage.md) | Fixed: the game's waits for the GPU and the video reader no longer spin |
+| [Overexposed image near the sun](light-glows.md) | Fixed: the light glows' occlusion quads are no longer counted (both renderers) |
 | [NativeXRenderer in Kameo](native-x-renderer-kameo.md) | In progress: mapped and verified (observer at 100 %); the menus, the videos and the first level draw. Off by default |

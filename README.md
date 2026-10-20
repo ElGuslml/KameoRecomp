@@ -138,7 +138,6 @@ message explains the change:
 | 0023 | `WAIT_REG_MEM` polls every 100 µs with the high-resolution timer instead of sleeping 1 ms |
 | 0024 | CMake: rexruntime and the GPU plugins are copied next to the executable on every build, not only when it links again |
 | 0025 | Code generator: a `share_registers` function (an SEH funclet, a setjmp caller) keeps its registers across calls when the others are local variables |
-| 0026 | Occlusion queries: inside a guest query, a draw whose depth test always passes without writing gets a stencil test that always passes and keeps, so it rasterizes and its samples are counted (this game's light glows, measured by such a quad, never showed) (D3D12 and Vulkan) |
 
 [NativeXRenderer](native_x_renderer/README.md) (`native_x_renderer/`, a submodule: a native renderer that hooks the
 game's Direct3D calls, developed on POTCAWERecomp and used by GRAWRecomp) brings its own SDK patches
