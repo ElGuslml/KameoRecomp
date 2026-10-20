@@ -67,6 +67,10 @@ anisotropic_override = 5
 # a screen that is not 16:9 only with this on; Kameo's ultrawide hooks widen the cameras for a wider screen,
 # not a taller one. Kameo Launcher turns it on with "Ultrawide" on a wider screen. false = 16:9 with bars.
 native_x_renderer_fill_screen = false
+# NativeXRenderer shows each frame when the game's swap for it executes, as the Xenos path does (library
+# D86). The game's Bink code waits a vertical blank for the GPU now and then while it plays a video; shown
+# at the game's Present calls instead (false), those frames took 30-50 ms.
+native_x_renderer_present_with_swaps = true
 )";
 
 uint32_t Crc32(const std::vector<char>& data) {
