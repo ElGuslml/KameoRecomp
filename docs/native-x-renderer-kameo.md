@@ -325,14 +325,48 @@ path from the first run (`kameo_055`), at 60 FPS. The first level needed two lib
 |---|---|
 | The scene's clear | Kameo clears its scene with `Clear(1, &rect, 0x3F, ...)`, the rectangle being the target's own 1280×720; the library skipped any clear with a rectangle, so the depth kept the previous frame's values, the geometry failed the depth test and an orange, sky-like gradient covered the screen. Library D78: a rectangle that covers the target clears it whole (`kameo_057`). |
 | Light glows | The glow of each light (the torches) is drawn by the count of an occlusion query around a quad that writes no color, depth always, no alpha test (`sub_823550D8`). The SDK turns that depth test off, the draw had no target and was skipped, and every count was 0: no glow, on the Xenos path too. Library D79: inside a query the test is kept; the counts are 25-49 samples per glow at the traced spot and the torches glow (`kameo_060`). The Xenos path got the same fix in shared SDK patch 0026 (its pipeline caches also drop that test, so the draw gets a stencil test that always passes and keeps instead): 17-69 samples per glow on D3D12 and Vulkan, the torches glow there too. |
-| Speed | 60 FPS. The overlay at the first level: the GPU at 18 % and about 50 W with NativeXRenderer, 67 % and about 143 W on the Xenos path (D3D12, 1280×720, the same spot); NativeXRenderer's GPU time 0.64 ms a frame on average. |
+| Speed | 60 FPS at the first level; NativeXRenderer's GPU time 0.64 ms a frame on average in a 1280×720 window. (The overlay's 18 % / 50 W against 67 % / 143 W noted then compared different resolutions: the Xenos path rendered at the options file's 3× scale. The A/B below compares equal resolutions.) |
 | Draws | 3,849 of 3,850 drawn in the level (1 without targets); 0 textures in unsupported formats; 234 shaders, 245 pipelines. |
 | Ultrawide | The profile sets `widens_cameras`: with `native_x_renderer_fill_screen` NativeXRenderer renders a wider output at its aspect ratio (2560×1080 window: the game's 1280×720 at 2.0 × 1.5), and the game's ultrawide hooks (`src/widescreen.cpp`, [ultrawide.md](ultrawide.md)) follow `AspectFactor()`: the 16:9 projections and culling frustums widened, the 2D layer's screen-wide orthographic projections narrowed around the center, the videos kept 16:9 with black sides. The hooks change guest values only, so the image matches the Xenos path's stretched ultrawide image at every traced spot (`kameo_092`). `SetGameAspectBox` is not used. Kameo Launcher turns filling on with "Aspect ratio: Ultrawide" on a wider output. |
 | Antialiasing | The frame's post-processing (bloom and glows) is done by the helper library's full-screen passes: the scene with its fog resolved into `0x82758880`, two 426×240 blurs, the bloom composite resolved into `0x82758880` again, a 32×32 luminance and 160×90 glows; the last pass draws `0x82758880` and the glows onto the screen, then the HUD. The profile names that resolve (`scene_resolve_caller` `0x820DC4B0`, the full-screen pass; `scene_resolve_outer_caller` `0x8227AE6C`, the post-processing driver): SMAA or FXAA is applied to the scene and its bloom composite, twice a frame in play (both share the callers), never in the menus or videos; the HUD text is untouched. |
 
+### Performance A/B (2026-10-19)
+
+Both renderers at the same output and the same settings (anisotropic 16×, no antialiasing, the cinematics' bars
+kept), through the same scripted route: the "PRESS START" video, the main menu, the level's opening video, Thorn's
+Castle standing and walking, the first cinematic; 6 s at each spot. RTX 4070 Ti (its clock at 2745 MHz throughout,
+about 40 W at the desktop), 30 and 60 FPS. The Xenos path on D3D12 at the whole-number scale that covers the output
+(1×, 2×, 3×2 = 3840×1440 for the ultrawide), NativeXRenderer at the output's size.
+
+GPU use and power at the level, standing (walking gives the same within 2 %):
+
+| Output | FPS | Xenos path | NativeXRenderer | NativeXRenderer's GPU time |
+|---|---|---|---|---|
+| 1280×720 | 30 | 13 % / 47.5 W | 12 % / 45.9 W | 2.0 ms |
+| 1280×720 | 60 | 21 % / 53.4 W | 18 % / 50.0 W | 2.1 ms |
+| 2560×1440 | 30 | 14 % / 55.8 W | 8 % / 49.3 W | 3.0 ms |
+| 2560×1440 | 60 | 27 % / 73.2 W | 17 % / 59.9 W | 3.1 ms |
+| 3440×1440 | 30 | 17 % / 61.8 W | 11 % / 50.5 W | 3.6 ms |
+| 3440×1440 | 60 | 36 % / 86.0 W | 23 % / 63.8 W | 3.7 ms |
+
+- **GPU:** nearly equal at 1280×720 (the game is light); at 2560×1440 and 3440×1440 NativeXRenderer uses about a
+  third less of the GPU, and about half of the power above the desktop's (3440×1440 at 60 FPS: 46 W against 24 W).
+  The cinematic and the menus show the same proportions; the videos cost little on both.
+- **CPU:** NativeXRenderer costs more: the process at the level 0.62-0.66 cores against 0.45-0.49 at 30 FPS,
+  1.09-1.16 against 0.74-0.79 at 60 FPS. Its renderer thread spends about 10 ms of CPU a frame in the level (its
+  log), about 60 % of a core at 60 FPS (the level draws about 3,850 times a frame, twice GRAW's training mission).
+- **Frame times:** every spot held 30 or 60 FPS on both. In play the longest frame at 60 FPS was 18-19 ms on both.
+  NativeXRenderer showed isolated frames of 30-50 ms in the Bink videos (the title video, the level's opening video)
+  at both rates; the Xenos path did not (at most 19 ms at 60 FPS).
+
+The CSV and the scripts: `local_docs/11-performance-ab.md` (not published).
+
 ## 9. Open
 
-- **More of the game**: only the first level's start, the menus and two videos have been seen with NativeXRenderer.
+- **More of the game**: only the first level's start, the first cinematic, the menus and two videos have been seen
+  with NativeXRenderer (and Gustavo's sessions of 2026-10-19, without problems).
+- **The renderer's CPU time**: about 10 ms a frame in the level (A/B above); enough for 60 FPS.
+- **Frames of 30-50 ms in the videos** with NativeXRenderer (A/B above), not on the Xenos path.
 - **The tessellated draw** `sub_820CF228` (one engine site, `sub_820E58C8`, chosen per object): no call of its own in
   the library and no tessellation in NativeXRenderer; not seen at the traced spots.
 - **The output size**: 1280×720 in the profile. The scene and its resolves are 1280×720 (the trace's resolve
