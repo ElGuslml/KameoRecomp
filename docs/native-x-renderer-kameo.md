@@ -366,7 +366,8 @@ The CSV and the scripts: `local_docs/11-performance-ab.md` (not published).
 
 - **More of the game**: only the first level's start, the first cinematic, the menus and two videos have been seen
   with NativeXRenderer (and Gustavo's sessions of 2026-10-19, without problems).
-- **The renderer's CPU time**: about 10 ms a frame in the level (A/B above); enough for 60 FPS.
+- **The renderer's CPU time**: about 10 ms a frame in the level (A/B above), 7.2-7.5 ms after library D81 and D82
+  (2026-10-20); enough for 60 FPS. Two more steps planned (the library's plan).
 - **Frames of 30-50 ms in the videos** with NativeXRenderer (A/B above), not on the Xenos path.
 - **The tessellated draw** `sub_820CF228` (one engine site, `sub_820E58C8`, chosen per object): no call of its own in
   the library and no tessellation in NativeXRenderer; not seen at the traced spots.
