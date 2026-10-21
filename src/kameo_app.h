@@ -44,7 +44,7 @@ class KameoApp : public rex::ReXApp {
   // std::unique_ptr<rex::ui::AchievementNotificationDialog>
   // CreateAchievementNotificationDialog() override;
   // void OnShutdown() override {}
-  // Game files: without --game_data_root, assets/ next to kameorecomp.exe or the repository's
+  // Game files: without --game_data_root, assets/ next to KameoEOPRecomp.exe or the repository's
   // assets/. User data (saves, profile, shader cache): userdata/ next to the executable
   // (src/startup.cpp).
   void OnConfigurePaths(rex::PathConfig& paths) override {

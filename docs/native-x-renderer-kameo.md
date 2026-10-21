@@ -9,7 +9,9 @@ library's [`xdk-d3d-reference.md`](../native_x_renderer/docs/xdk-d3d-reference.m
 
 Status (2026-10-18): mapped, hooked, and verified by the observer at 100 % in the title video, the main menu, a
 video and the first level. With `--native_x_renderer=true` all four draw as on the Xenos path, the first level's light
-glows included ([First frames](#8-first-frames)). Off by default: Kameo draws on the Xenos path.
+glows included ([First frames](#8-first-frames)). **The default renderer since 2026-10-21** (`native_x_renderer = true` in
+`kameo.toml`'s defaults and in Kameo Launcher), after Gustavo's play on it; the Xenos path stays in the launcher's
+"Renderer" row, and draws if NativeXRenderer cannot start.
 
 The XDK library was linked with **link-time code generation (LTCG)**: small D3D functions are inlined into the
 engine (EndVertices, the typed Lock/Unlock thunks, CreateDevice, parts of SetVertexShader, SetPixelShader,
@@ -384,6 +386,5 @@ The CSV and the scripts: `local_docs/11-performance-ab.md` (not published).
   `0x820D0174`, every frame).
 - **Present from another thread**: the tiling worker `sub_820D5EC0` can present on a timeout; not seen in the
   traces (every Present on the render thread).
-- **The default**: Kameo Launcher has the "Renderer" row (NativeXRenderer marked experimental, its internal
-  resolution tied to the screen or the window, D54) since 2026-10-18; Xenos stays the default until a full play
-  test. Its antialiasing row (SMAA, FXAA, off) works with NativeXRenderer since the profile names the scene resolve.
+- **The default**: Kameo Launcher has the "Renderer" row (its internal resolution tied to the screen or the window,
+  D54) since 2026-10-18; NativeXRenderer is the default since 2026-10-21 (no longer marked experimental). Its antialiasing row (SMAA, FXAA, off) works with NativeXRenderer since the profile names the scene resolve.

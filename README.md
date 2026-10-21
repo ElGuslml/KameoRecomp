@@ -32,10 +32,10 @@ compiled; the Xbox 360 GPU is emulated by ReXGlue's Xenos backend (derived from 
 - **Kameo Launcher**: language, monitor, fullscreen / borderless / window, window resolution, renderer,
   aspect ratio (16:9 / ultrawide), cinematics without black bars, internal resolution, frame rate (30 / 60 FPS), antialiasing, anisotropic
   filtering (16× by default) and graphics API. Works
-  with mouse, keyboard or controller; "Save" keeps the window open. With Xenos (the emulated GPU, the default)
+  with mouse, keyboard or controller; "Save" keeps the window open. With Xenos (the emulated GPU)
   ReXGlue renders the game's 1280×720 frame at a whole multiple per axis (2×, 3×) and fits the image to the
   screen; "Automatic" picks the smallest scale that covers your screen (3840×1440 on a 3440×1440 ultrawide). With
-  [NativeXRenderer](docs/native-x-renderer-kameo.md) (experimental, Vulkan) the internal resolution is your
+  [NativeXRenderer](docs/native-x-renderer-kameo.md) (the default, Vulkan) the internal resolution is your
   screen's or your window's ("Automatic"), or a lower height, with SMAA or FXAA on the scene (the HUD stays sharp).
 - [`docs/`](docs/README.md) will have a short note on each problem found and what was done about it.
 
@@ -57,7 +57,7 @@ To run:
 
 Extract the content of your disc or ISO with
 [extract-xiso](https://github.com/XboxDev/extract-xiso/releases) and copy all of it into `assets/` so that
-`assets/default.xex` exists. The expected executable has CRC32 `E24BE720`; `kameorecomp.exe` warns you at
+`assets/default.xex` exists. The expected executable has CRC32 `E24BE720`; `KameoEOPRecomp.exe` warns you at
 startup if yours is a different version. See [`assets/README.md`](assets/README.md).
 
 ## Building from source
@@ -79,22 +79,22 @@ cmake --build --preset win-amd64-release
 
 ```powershell
 .\out\build\win-amd64-release\"Kameo Launcher.exe"   # choose the options, then Play
-.\out\build\win-amd64-release\kameorecomp.exe        # or start the game directly with the saved options
+.\out\build\win-amd64-release\KameoEOPRecomp.exe        # or start the game directly with the saved options
 ```
 
-- Game files are found in `assets\` next to `kameorecomp.exe`, otherwise in the repository's `assets\`.
+- Game files are found in `assets\` next to `KameoEOPRecomp.exe`, otherwise in the repository's `assets\`.
   Use `--game_data_root=<folder>` to point somewhere else.
-- Saves, the profile and the shader cache go to `userdata\` next to `kameorecomp.exe` (if that folder
+- Saves, the profile and the shader cache go to `userdata\` next to `KameoEOPRecomp.exe` (if that folder
   cannot be written, for example under Program Files, they go to `Documents\kameo`). Logs go to `logs\`.
 
 ### Steam Big Picture
 
-Add `kameorecomp.exe` as a non-Steam game: it starts straight into the game with the options you saved in
+Add `KameoEOPRecomp.exe` as a non-Steam game: it starts straight into the game with the options you saved in
 Kameo Launcher. You can also add `Kameo Launcher.exe` to change options from the couch with a controller.
 
 ## Configuration
 
-| File (next to `kameorecomp.exe`) | What it holds |
+| File (next to `KameoEOPRecomp.exe`) | What it holds |
 |---|---|
 | `kameo.toml` | Base settings. Created with the defaults if it is missing; a default setting the file lacks is appended at startup. |
 | `kameo_options.toml` | What Kameo Launcher saves (language, monitor, display, window size, renderer, aspect ratio, cinematics, render scale or internal resolution, frame rate, antialiasing, anisotropic filtering, API). Loaded after `kameo.toml`. |
@@ -142,7 +142,7 @@ message explains the change:
 [NativeXRenderer](native_x_renderer/README.md) (`native_x_renderer/`, a submodule: a native renderer that hooks the
 game's Direct3D calls, developed on POTCAWERecomp and used by GRAWRecomp) brings its own SDK patches
 (`native_x_renderer/sdk_patches/`), applied after this series. They change nothing while NativeXRenderer is off.
-In Kameo it is experimental: Kameo Launcher's "Renderer" row chooses it, Xenos stays the default
+In Kameo it is the default renderer since 2026-10-21; Kameo Launcher's "Renderer" row can choose Xenos instead
 ([`docs/native-x-renderer-kameo.md`](docs/native-x-renderer-kameo.md)).
 
 ## Credits

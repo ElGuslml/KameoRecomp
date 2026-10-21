@@ -11,4 +11,4 @@ the symptom, the cause, the fix and how to turn the fix off, so that you can che
 | [Cinematics without black bars](cinematic-bars.md) | Working: launcher checkbox, at 16:9 and ultrawide |
 | [CPU usage: one core at 100 %](cpu-usage.md) | Fixed: the game's waits for the GPU and the video reader no longer spin |
 | [Overexposed image near the sun](light-glows.md) | Fixed: the light glows' occlusion quads are no longer counted (both renderers) |
-| [NativeXRenderer in Kameo](native-x-renderer-kameo.md) | In progress: mapped and verified (observer at 100 %); the menus, the videos and the first level draw. Off by default |
+| [NativeXRenderer in Kameo](native-x-renderer-kameo.md) | The default renderer since 2026-10-21 (Xenos stays in the launcher's "Renderer" row) |

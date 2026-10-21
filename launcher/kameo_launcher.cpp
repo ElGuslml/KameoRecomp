@@ -1,22 +1,22 @@
 // Kameo Launcher: options for kameo (recompiled Kameo: Elements of Power) in a separate executable,
-// so that kameorecomp.exe starts right away (for example from Steam Big Picture).
+// so that KameoEOPRecomp.exe starts right away (for example from Steam Big Picture).
 //
 // Plain Win32, no SDK. Reads kameo.toml and kameo_options.toml (next to this exe and
-// kameorecomp.exe), shows language, monitor, display, resolution, renderer, aspect ratio, cinematics, internal
+// KameoEOPRecomp.exe), shows language, monitor, display, resolution, renderer, aspect ratio, cinematics, internal
 // resolution, frame rate, antialiasing, anisotropic filtering and graphics API, and saves the choice to
-// kameo_options.toml, which kameorecomp.exe loads at startup (src/options.cpp).
-// "Play" also starts kameorecomp.exe (with the arguments the launcher received) and waits for it
+// kameo_options.toml, which KameoEOPRecomp.exe loads at startup (src/options.cpp).
+// "Play" also starts KameoEOPRecomp.exe (with the arguments the launcher received) and waits for it
 // to exit, so Steam keeps seeing the game as running; "Save" saves and keeps the window open. Works
 // with mouse, keyboard or controller (XInput).
 //
 // Language: the game's (user_language, plus kameo_latin_american_spanish for the two Spanish
 // versions, src/language.cpp); the first time, the Windows display language. The launcher texts
 // follow it (English, German, French, Spanish, Italian; English for the others).
-// Renderer: the SDK's Xenos emulation (the default), or NativeXRenderer (native_x_renderer,
-// experimental in this game), which draws natively on Vulkan at any resolution
+// Renderer: NativeXRenderer (native_x_renderer, the default), which draws natively on Vulkan at any resolution
 // (native_x_renderer/docs/decisions.md, D37): its internal resolution row is the screen's or the
 // window's, or a lower height (D54), and it has its own antialiasing (SMAA, FXAA or off, D41, D65);
-// Xenos keeps the whole-number scales of 1280 x 720 and the game's look (no antialiasing).
+// The SDK's Xenos emulation, the alternative, keeps the whole-number scales of 1280 x 720 and the game's look (no
+// antialiasing).
 // Aspect ratio: 16:9 (bars on a wider screen) or ultrawide (kameo_ultrawide, src/widescreen.cpp): the game's
 // cameras see more to the sides, the HUD and the videos stay 16:9 in the center; Xenos stretches its image over
 // the screen (present_letterbox = false, a render scale per axis) and NativeXRenderer renders at the screen's
@@ -81,7 +81,7 @@ struct Options {
   bool no_letterbox = false;               // kameo_no_letterbox (src/cinematics.cpp)
   int anisotropic = 5;  // anisotropic_override (SDK): 5 = 16x, 4 = 8x, 3 = 4x, 2 = 2x, 0 = off, -1 = the game's
   bool vulkan = false;  // gpu_backend = "vulkan" (otherwise "d3d12")
-  bool native = false;  // native_x_renderer: NativeXRenderer draws instead of Xenos
+  bool native = true;  // native_x_renderer: NativeXRenderer draws instead of Xenos (the default)
   int native_aa = 0;    // native_x_renderer_antialiasing: an index of kNativeAntialiasing
   int native_height = 0;  // native_x_renderer_resolution_scale × 720: the internal resolution's height; 0 = automatic
 };
@@ -230,7 +230,6 @@ struct Texts {
   const wchar_t* renderer;
   const wchar_t* renderer_xenos;
   const wchar_t* renderer_native;
-  const wchar_t* experimental;  // a setting not finished, offered for testing
   const wchar_t* aspect;
   const wchar_t* aspect_original;
   const wchar_t* aspect_ultrawide;
@@ -263,7 +262,7 @@ struct Texts {
 
 const Texts& TextsFor(uint32_t language) {
   static const Texts kEnglish = {
-      L"Options are saved; kameorecomp.exe starts straight away with them.",
+      L"Options are saved; KameoEOPRecomp.exe starts straight away with them.",
       L"Language",
       L"Monitor",
       L"primary",
@@ -276,7 +275,6 @@ const Texts& TextsFor(uint32_t language) {
       L"Renderer",
       L"Xenos (emulated)",
       L"NativeXRenderer",
-      L"experimental",
       L"Aspect ratio",
       L"16:9 (original)",
       L"Ultrawide (full width)",
@@ -301,18 +299,18 @@ const Texts& TextsFor(uint32_t language) {
       L"Vulkan has been tested less than DirectX 12 in this game: use it if DirectX 12 gives you "
       L"problems.",
       L"NativeXRenderer draws the game natively with Vulkan instead of emulating the Xbox 360 GPU, "
-      L"at the internal resolution you choose (Automatic: your screen's or your window's). It is new "
-      L"in this game: choose Xenos if something looks wrong.",
+      L"at the internal resolution you choose (Automatic: your screen's or your window's). Xenos emulates "
+      L"the console's GPU instead: choose it if something looks wrong.",
       L"Controller: ↑↓ choose · ←→ change · A play · B quit",
       L"Play",
       L"Save",
       L"Saved",
       L"Quit",
-      L"kameorecomp.exe was not found next to Kameo Launcher.",
+      L"KameoEOPRecomp.exe was not found next to Kameo Launcher.",
       L"Could not save the options to kameo_options.toml.",
   };
   static const Texts kGerman = {
-      L"Die Optionen werden gespeichert; kameorecomp.exe startet direkt mit ihnen.",
+      L"Die Optionen werden gespeichert; KameoEOPRecomp.exe startet direkt mit ihnen.",
       L"Sprache",
       L"Monitor",
       L"Hauptmonitor",
@@ -325,7 +323,6 @@ const Texts& TextsFor(uint32_t language) {
       L"Renderer",
       L"Xenos (emuliert)",
       L"NativeXRenderer",
-      L"experimentell",
       L"Seitenverhältnis",
       L"16:9 (Original)",
       L"Ultrawide (volle Breite)",
@@ -350,18 +347,18 @@ const Texts& TextsFor(uint32_t language) {
       L"Vulkan ist in diesem Spiel weniger getestet als DirectX 12: nutze es, wenn DirectX 12 "
       L"Probleme macht.",
       L"NativeXRenderer zeichnet das Spiel nativ mit Vulkan, statt die GPU der Xbox 360 zu emulieren, "
-      L"in der gewählten internen Auflösung („Automatisch“: die deines Bildschirms oder Fensters). In "
-      L"diesem Spiel ist er neu: wähle Xenos, wenn etwas falsch aussieht.",
+      L"in der gewählten internen Auflösung („Automatisch“: die deines Bildschirms oder Fensters). Xenos "
+      L"emuliert stattdessen die GPU der Konsole: wähle es, wenn etwas falsch aussieht.",
       L"Controller: ↑↓ wählen · ←→ ändern · A spielen · B beenden",
       L"Spielen",
       L"Speichern",
       L"Gespeichert",
       L"Beenden",
-      L"kameorecomp.exe wurde neben Kameo Launcher nicht gefunden.",
+      L"KameoEOPRecomp.exe wurde neben Kameo Launcher nicht gefunden.",
       L"Die Optionen konnten nicht in kameo_options.toml gespeichert werden.",
   };
   static const Texts kFrench = {
-      L"Les options sont enregistrées ; kameorecomp.exe démarre directement avec elles.",
+      L"Les options sont enregistrées ; KameoEOPRecomp.exe démarre directement avec elles.",
       L"Langue",
       L"Moniteur",
       L"principal",
@@ -374,7 +371,6 @@ const Texts& TextsFor(uint32_t language) {
       L"Moteur de rendu",
       L"Xenos (émulé)",
       L"NativeXRenderer",
-      L"expérimental",
       L"Format d'image",
       L"16:9 (d'origine)",
       L"Ultra-large (toute la largeur)",
@@ -400,18 +396,18 @@ const Texts& TextsFor(uint32_t language) {
       L"Vulkan a été moins testé que DirectX 12 dans ce jeu : utilisez-le si DirectX 12 pose "
       L"problème.",
       L"NativeXRenderer dessine le jeu nativement avec Vulkan au lieu d'émuler le GPU de la Xbox 360, à "
-      L"la résolution interne choisie (« Automatique » : celle de votre écran ou de votre fenêtre). Il "
-      L"est nouveau dans ce jeu : choisissez Xenos si quelque chose s'affiche mal.",
+      L"la résolution interne choisie (« Automatique » : celle de votre écran ou de votre fenêtre). Xenos "
+      L"émule plutôt le GPU de la console : choisissez-le si quelque chose s'affiche mal.",
       L"Manette : ↑↓ choisir · ←→ modifier · A jouer · B quitter",
       L"Jouer",
       L"Enregistrer",
       L"Enregistré",
       L"Quitter",
-      L"kameorecomp.exe est introuvable à côté de Kameo Launcher.",
+      L"KameoEOPRecomp.exe est introuvable à côté de Kameo Launcher.",
       L"Impossible d'enregistrer les options dans kameo_options.toml.",
   };
   static const Texts kSpanish = {
-      L"Las opciones se guardan y kameorecomp.exe arranca directo con ellas.",
+      L"Las opciones se guardan y KameoEOPRecomp.exe arranca directo con ellas.",
       L"Idioma",
       L"Monitor",
       L"principal",
@@ -424,7 +420,6 @@ const Texts& TextsFor(uint32_t language) {
       L"Renderizador",
       L"Xenos (emulado)",
       L"NativeXRenderer",
-      L"experimental",
       L"Formato de imagen",
       L"16:9 (original)",
       L"Ultrapanorámico (todo el ancho)",
@@ -449,18 +444,18 @@ const Texts& TextsFor(uint32_t language) {
       L"Vulkan está menos probado que DirectX 12 en este juego: úsalo si DirectX 12 te da "
       L"problemas.",
       L"NativeXRenderer dibuja el juego de forma nativa con Vulkan en vez de emular la GPU de Xbox 360, "
-      L"a la resolución interna que elijas («Automática»: la de tu pantalla o tu ventana). Es nuevo en "
-      L"este juego: elige Xenos si algo se ve mal.",
+      L"a la resolución interna que elijas («Automática»: la de tu pantalla o tu ventana). Xenos, en "
+      L"cambio, emula la GPU de la consola: elígelo si algo se ve mal.",
       L"Mando: ↑↓ elegir · ←→ cambiar · A jugar · B salir",
       L"Jugar",
       L"Guardar",
       L"Guardado",
       L"Salir",
-      L"No se encontró kameorecomp.exe junto a Kameo Launcher.",
+      L"No se encontró KameoEOPRecomp.exe junto a Kameo Launcher.",
       L"No se pudieron guardar las opciones en kameo_options.toml.",
   };
   static const Texts kItalian = {
-      L"Le opzioni vengono salvate; kameorecomp.exe si avvia direttamente con esse.",
+      L"Le opzioni vengono salvate; KameoEOPRecomp.exe si avvia direttamente con esse.",
       L"Lingua",
       L"Monitor",
       L"principale",
@@ -473,7 +468,6 @@ const Texts& TextsFor(uint32_t language) {
       L"Renderer",
       L"Xenos (emulato)",
       L"NativeXRenderer",
-      L"sperimentale",
       L"Formato immagine",
       L"16:9 (originale)",
       L"Ultrawide (tutta la larghezza)",
@@ -499,13 +493,13 @@ const Texts& TextsFor(uint32_t language) {
       L"problemi.",
       L"NativeXRenderer disegna il gioco in modo nativo con Vulkan invece di emulare la GPU della Xbox "
       L"360, alla risoluzione interna scelta («Automatica»: quella del tuo schermo o della tua finestra). "
-      L"In questo gioco è nuovo: scegli Xenos se qualcosa appare sbagliato.",
+      L"Xenos invece emula la GPU della console: sceglilo se qualcosa appare sbagliato.",
       L"Controller: ↑↓ scegli · ←→ cambia · A gioca · B esci",
       L"Gioca",
       L"Salva",
       L"Salvato",
       L"Esci",
-      L"kameorecomp.exe non trovato accanto a Kameo Launcher.",
+      L"KameoEOPRecomp.exe non trovato accanto a Kameo Launcher.",
       L"Impossibile salvare le opzioni in kameo_options.toml.",
   };
   switch (language) {
@@ -937,7 +931,7 @@ void Refresh(Launcher& l) {
   // NativeXRenderer needs Vulkan (it draws through DiligentCore's Vulkan backend).
   std::vector<std::wstring> renderers = {t.renderer_xenos};
   if (l.has_vulkan) {
-    renderers.push_back(std::wstring(t.renderer_native) + L" (" + t.experimental + L")");
+    renderers.emplace_back(t.renderer_native);
   }
   FillCombo(Item(l, kIdRenderer), renderers, o.native ? 1 : 0);
 
@@ -1490,7 +1484,7 @@ Options OptionsFromConfig(const Config& c, UINT primary_dpi) {
   o.ultrawide = GetBool(c, "kameo_ultrawide", false);
   o.no_letterbox = GetBool(c, "kameo_no_letterbox", false);
   o.vulkan = GetString(c, "gpu_backend") == "vulkan";
-  o.native = GetBool(c, "native_x_renderer", false);
+  o.native = GetBool(c, "native_x_renderer", true);  // the default
   double native_scale = std::strtod(GetString(c, "native_x_renderer_resolution_scale").c_str(), nullptr);
   o.native_height = native_scale > 0.0 ? int(std::lround(native_scale * kGuestHeight)) : 0;
   std::string native_aa = GetString(c, "native_x_renderer_antialiasing");
@@ -1523,7 +1517,7 @@ bool SaveOptions(const std::filesystem::path& path, const Launcher& l) {
   }
   auto boolean = [](bool value) { return value ? "true" : "false"; };
   f << "# Kameo Launcher options (\"Kameo Launcher.exe\"): written when \"Play\" or \"Save\" is\n"
-       "# pressed. kameorecomp.exe loads them at startup, after kameo.toml, without showing\n"
+       "# pressed. KameoEOPRecomp.exe loads them at startup, after kameo.toml, without showing\n"
        "# any window.\n"
        "# Command line options (for example those of a Steam shortcut) win over these.\n"
        "# user_language: 1 English, 2 Japanese, 3 German, 4 French, 5 Spanish, 6 Italian,\n"
@@ -1625,10 +1619,10 @@ std::wstring ForwardedArguments() {
   return p;
 }
 
-// Starts kameorecomp.exe and waits for it to exit: meanwhile Steam keeps seeing the game as
+// Starts KameoEOPRecomp.exe and waits for it to exit: meanwhile Steam keeps seeing the game as
 // running.
 int LaunchGame(const std::filesystem::path& exe_dir, const Texts& t) {
-  std::filesystem::path game = exe_dir / L"kameorecomp.exe";
+  std::filesystem::path game = exe_dir / L"KameoEOPRecomp.exe";
   if (!std::filesystem::exists(game)) {
     MessageBoxW(nullptr, t.game_missing, L"Kameo Launcher", MB_OK | MB_ICONERROR);
     return 1;
@@ -1672,7 +1666,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR, int) {
 
   std::filesystem::path exe_dir = ExecutableFolder();
   std::filesystem::path options_path = exe_dir / L"kameo_options.toml";
-  // The same kameorecomp.exe will see: kameo.toml, then what the launcher saved on top.
+  // The same KameoEOPRecomp.exe will see: kameo.toml, then what the launcher saved on top.
   Config config;
   ReadToml(exe_dir / L"kameo.toml", config);
   ReadToml(options_path, config);

@@ -1,7 +1,7 @@
 // kameo - Kameo Launcher options.
 //
 // The launcher is a separate executable ("Kameo Launcher.exe", launcher/kameo_launcher.cpp)
-// that writes kameo_options.toml next to kameorecomp.exe. The game executable only loads it,
+// that writes kameo_options.toml next to KameoEOPRecomp.exe. The game executable only loads it,
 // after kameo.toml and before the window and the GPU are created (which is when those options
 // are read), and starts right away without showing anything, so it can be launched from Steam Big
 // Picture without a mouse.

@@ -6,7 +6,7 @@
 
 namespace kameo {
 
-// Game files folder when --game_data_root is not given: assets/ next to kameorecomp.exe (release
+// Game files folder when --game_data_root is not given: assets/ next to KameoEOPRecomp.exe (release
 // layout) if it holds the game, otherwise the repository's assets/ (KAMEO_DEFAULT_GAME_ROOT, set in
 // CMake); if neither does, assets/ next to the executable, so the "files not found" message names
 // that folder.

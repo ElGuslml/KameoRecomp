@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 256 256" width="256" height="256">
+  <!-- icon.svg simplified for 16-32 px: a bigger medallion and orb, the wings without veins, no glow or sparkles. -->
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbe7a1"/>
+      <stop offset="0.45" stop-color="#d6a640"/>
+      <stop offset="1" stop-color="#8a5a18"/>
+    </linearGradient>
+    <radialGradient id="forest" cx="0.5" cy="0.4" r="0.62">
+      <stop offset="0" stop-color="#2f8a6a"/>
+      <stop offset="0.6" stop-color="#14503f"/>
+      <stop offset="1" stop-color="#072820"/>
+    </radialGradient>
+    <linearGradient id="wing" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#e2fff3"/>
+      <stop offset="1" stop-color="#5ed6b4"/>
+    </linearGradient>
+    <g id="wings">
+      <path d="M146 112 C 164 80, 198 42, 240 34 C 248 54, 226 96, 190 114 C 174 122, 158 120, 146 112 Z"
+            fill="url(#wing)" stroke="#f4fffa" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M146 144 C 172 150, 210 168, 222 208 C 206 216, 172 198, 156 172 C 150 162, 147 152, 146 144 Z"
+            fill="url(#wing)" stroke="#f4fffa" stroke-width="5" stroke-linejoin="round"/>
+    </g>
+  </defs>
+
+  <circle cx="128" cy="128" r="114" fill="url(#gold)"/>
+  <circle cx="128" cy="128" r="98" fill="url(#forest)"/>
+  <circle cx="128" cy="128" r="98" fill="none" stroke="#3a240a" stroke-width="4"/>
+
+  <use xlink:href="#wings"/>
+  <use xlink:href="#wings" transform="translate(256 0) scale(-1 1)"/>
+
+  <path d="M128 128 L 94.4 94.4 A 47.5 47.5 0 0 1 161.6 94.4 Z" fill="#f2581c"/>
+  <path d="M128 128 L 161.6 94.4 A 47.5 47.5 0 0 1 161.6 161.6 Z" fill="#5ab8f0"/>
+  <path d="M128 128 L 161.6 161.6 A 47.5 47.5 0 0 1 94.4 161.6 Z" fill="#8c5a2c"/>
+  <path d="M128 128 L 94.4 161.6 A 47.5 47.5 0 0 1 94.4 94.4 Z" fill="#4cbf3e"/>
+  <path d="M94.4 94.4 L 161.6 161.6 M161.6 94.4 L 94.4 161.6" stroke="#f3d27a" stroke-width="5"/>
+  <circle cx="128" cy="128" r="50" fill="none" stroke="url(#gold)" stroke-width="9"/>
+  <circle cx="128" cy="128" r="55" fill="none" stroke="#3a240a" stroke-width="3"/>
+</svg>

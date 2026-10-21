@@ -1,4 +1,4 @@
-// Resources of kameorecomp.exe: icon (res/icon.ico, when present) and file properties.
+// Resources of KameoEOPRecomp.exe: icon (res/icon.ico, when present) and file properties.
 #include <winver.h>
 #include "version.h"
 
@@ -20,7 +20,7 @@ BEGIN
       VALUE "FileVersion", KAMEORECOMP_VERSION_STR
       VALUE "ProductName", "KameoRecomp"
       VALUE "ProductVersion", KAMEORECOMP_VERSION_STR
-      VALUE "OriginalFilename", "kameorecomp.exe"
+      VALUE "OriginalFilename", "KameoEOPRecomp.exe"
       VALUE "LegalCopyright", "KameoRecomp code: MIT License. Game content belongs to its owners."
     END
   END

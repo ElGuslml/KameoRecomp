@@ -32,7 +32,7 @@ constexpr uint32_t kGameExecutableCrc32 = 0xE24BE720;
 // The GPU settings are POTCAWERecomp's: they are not yet shown to be needed by this game. Each
 // comment says what the setting does and what false (or true) gives back.
 constexpr const char kDefaultConfig[] =
-    R"(# kameorecomp.exe runtime configuration, loaded at startup. The game recreates this file with
+    R"(# KameoEOPRecomp.exe runtime configuration, loaded at startup. The game recreates this file with
 # these defaults if it is missing. Kameo Launcher saves its choices to kameo_options.toml, which
 # is loaded after this file; command line options (--name=value) win over both.
 log_level = "info"
@@ -63,6 +63,10 @@ clear_memory_page_state = false
 # 5 = 16x, 4 = 8x, 3 = 4x (the SDK default), 2 = 2x, 0 = off, -1 = only what the game asks. Kameo
 # Launcher's "Anisotropic filtering" row sets it.
 anisotropic_override = 5
+# Draw the game with NativeXRenderer, a native renderer on Vulkan (DiligentCore), instead of the SDK's emulation
+# of the Xbox 360 GPU (docs/native-x-renderer-kameo.md). Kameo Launcher's "Renderer" row sets it. false = the
+# Xenos path. If NativeXRenderer cannot start, the Xenos path draws.
+native_x_renderer = true
 # NativeXRenderer (native_x_renderer = true, Kameo Launcher's "Renderer" row) renders at the aspect ratio of
 # a screen that is not 16:9 only with this on; Kameo's ultrawide hooks widen the cameras for a wider screen,
 # not a taller one. Kameo Launcher turns it on with "Ultrawide" on a wider screen. false = 16:9 with bars.

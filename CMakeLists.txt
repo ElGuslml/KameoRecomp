@@ -87,20 +87,20 @@ native_x_renderer_copy_runtime(kameo)
 
 # The target and the app keep the name "kameo" (kameo.toml, logs\kameo_NNN.log); only the
 # executable gets a descriptive name.
-set_target_properties(kameo PROPERTIES OUTPUT_NAME "kameorecomp")
+set_target_properties(kameo PROPERTIES OUTPUT_NAME "KameoEOPRecomp")
 
 # With the SDK built from source, rexruntime does not pass the Dear ImGui include directory on to the
 # host target (the installed SDK ships imgui.h in include/); rex_app.cpp and kameo_app.h need it. The
 # symbols still come from rexruntime.dll.
 target_include_directories(kameo PRIVATE "${REXSDK_DIR}/thirdparty/imgui")
 
-# Game files: assets/ next to kameorecomp.exe (release layout) or, if absent, the repository's
+# Game files: assets/ next to KameoEOPRecomp.exe (release layout) or, if absent, the repository's
 # assets/.
 target_compile_definitions(kameo PRIVATE
     KAMEO_DEFAULT_GAME_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
-# Kameo Launcher: game options in a separate executable (Win32, no SDK) so that kameorecomp.exe
-# starts right away. It writes kameo_options.toml next to kameorecomp.exe and starts it on "Play".
+# Kameo Launcher: game options in a separate executable (Win32, no SDK) so that KameoEOPRecomp.exe
+# starts right away. It writes kameo_options.toml next to KameoEOPRecomp.exe and starts it on "Play".
 if(WIN32)
     add_executable(kameo_launcher WIN32 launcher/kameo_launcher.cpp)
     set_target_properties(kameo_launcher PROPERTIES OUTPUT_NAME "Kameo Launcher")

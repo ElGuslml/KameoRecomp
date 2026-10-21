@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 256 256" width="256" height="256">
+  <!-- The KameoEOPRecomp icon: a pair of translucent fairy wings over a gold medallion, an orb of the four
+       elements (fire, ice, plant, rock) at its center; generic fantasy imagery drawn for this project (no art
+       from the game). res/make_icon.mjs builds res/icon.ico from this file (40 px and up) and icon_small.svg
+       (16-32 px). -->
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fbe7a1"/>
+      <stop offset="0.45" stop-color="#d6a640"/>
+      <stop offset="1" stop-color="#7a4d12"/>
+    </linearGradient>
+    <radialGradient id="forest" cx="0.5" cy="0.4" r="0.62">
+      <stop offset="0" stop-color="#2f8a6a"/>
+      <stop offset="0.6" stop-color="#14503f"/>
+      <stop offset="1" stop-color="#072820"/>
+    </radialGradient>
+    <linearGradient id="wingUp" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#d9fff0" stop-opacity="0.95"/>
+      <stop offset="0.55" stop-color="#6fe0bd" stop-opacity="0.78"/>
+      <stop offset="1" stop-color="#2fb5a0" stop-opacity="0.62"/>
+    </linearGradient>
+    <linearGradient id="wingDown" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d9fff0" stop-opacity="0.92"/>
+      <stop offset="0.6" stop-color="#78e3a8" stop-opacity="0.74"/>
+      <stop offset="1" stop-color="#3fb27a" stop-opacity="0.6"/>
+    </linearGradient>
+    <linearGradient id="fire" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#ffb02e"/>
+      <stop offset="1" stop-color="#d62a12"/>
+    </linearGradient>
+    <linearGradient id="ice" x1="1" y1="0.5" x2="0" y2="0.5">
+      <stop offset="0" stop-color="#c9f3ff"/>
+      <stop offset="1" stop-color="#2584d6"/>
+    </linearGradient>
+    <linearGradient id="rock" x1="0.5" y1="1" x2="0.5" y2="0">
+      <stop offset="0" stop-color="#4f2c12"/>
+      <stop offset="1" stop-color="#b47a3c"/>
+    </linearGradient>
+    <linearGradient id="plant" x1="0" y1="0.5" x2="1" y2="0.5">
+      <stop offset="0" stop-color="#a6ea62"/>
+      <stop offset="1" stop-color="#1f8a2c"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="0.36" cy="0.28" r="0.42">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff6c8" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#fff6c8" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- The right-hand wings; the left ones are the same, mirrored. -->
+    <g id="wings">
+      <path d="M140 118 C 158 82, 196 40, 238 34 C 246 50, 226 92, 190 114 C 172 124, 154 124, 140 118 Z"
+            fill="url(#wingUp)" stroke="#effff8" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M150 112 C 176 92, 206 62, 232 40 M168 116 C 190 104, 214 82, 228 62 M160 104 C 176 80, 198 56, 220 42"
+            fill="none" stroke="#effff8" stroke-opacity="0.55" stroke-width="1.4" stroke-linecap="round"/>
+      <path d="M140 138 C 168 144, 206 162, 220 202 C 206 212, 172 196, 154 170 C 146 158, 141 148, 140 138 Z"
+            fill="url(#wingDown)" stroke="#effff8" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M148 146 C 168 160, 194 180, 214 200 M152 156 C 166 174, 184 192, 204 204"
+            fill="none" stroke="#effff8" stroke-opacity="0.5" stroke-width="1.3" stroke-linecap="round"/>
+    </g>
+    <g id="sparkle">
+      <path d="M0 -7 L 1.6 -1.6 L 7 0 L 1.6 1.6 L 0 7 L -1.6 1.6 L -7 0 L -1.6 -1.6 Z" fill="#fff3c4"/>
+    </g>
+  </defs>
+
+  <!-- Medallion -->
+  <circle cx="128" cy="128" r="104" fill="url(#gold)"/>
+  <circle cx="128" cy="128" r="104" fill="none" stroke="#5c380c" stroke-width="2" stroke-opacity="0.6"/>
+  <circle cx="128" cy="128" r="93" fill="url(#forest)"/>
+  <circle cx="128" cy="128" r="93" fill="none" stroke="#3a240a" stroke-width="2.5"/>
+  <circle cx="128" cy="128" r="98.5" fill="none" stroke="#fff0bf" stroke-width="1.2" stroke-opacity="0.55"/>
+
+  <!-- Wings -->
+  <use xlink:href="#wings"/>
+  <use xlink:href="#wings" transform="translate(256 0) scale(-1 1)"/>
+
+  <!-- Light around the orb -->
+  <circle cx="128" cy="128" r="58" fill="url(#glow)"/>
+
+  <!-- Orb of the four elements: fire (top), ice (right), rock (bottom), plant (left) -->
+  <g>
+    <path d="M128 128 L 104.7 104.7 A 33 33 0 0 1 151.3 104.7 Z" fill="url(#fire)"/>
+    <path d="M128 128 L 151.3 104.7 A 33 33 0 0 1 151.3 151.3 Z" fill="url(#ice)"/>
+    <path d="M128 128 L 151.3 151.3 A 33 33 0 0 1 104.7 151.3 Z" fill="url(#rock)"/>
+    <path d="M128 128 L 104.7 151.3 A 33 33 0 0 1 104.7 104.7 Z" fill="url(#plant)"/>
+    <path d="M104.7 104.7 L 151.3 151.3 M151.3 104.7 L 104.7 151.3" stroke="#f3d27a" stroke-width="2.4"/>
+    <circle cx="128" cy="128" r="33" fill="url(#gloss)"/>
+    <circle cx="128" cy="128" r="34.5" fill="none" stroke="url(#gold)" stroke-width="5"/>
+    <circle cx="128" cy="128" r="37" fill="none" stroke="#3a240a" stroke-width="1.2" stroke-opacity="0.7"/>
+  </g>
+
+  <!-- Sparkles -->
+  <use xlink:href="#sparkle" transform="translate(84 74) scale(0.9)"/>
+  <use xlink:href="#sparkle" transform="translate(176 186) scale(0.7)"/>
+  <use xlink:href="#sparkle" transform="translate(96 192) scale(0.55)"/>
+</svg>
