@@ -5,6 +5,15 @@ repository also contain the following software, each under its own license. Full
 `thirdparty/rexglue-sdk` submodule at the paths given below; binary releases ship them in a `licenses/`
 folder.
 
+## NativeXRenderer
+
+The renderer, [NativeXRenderer](https://github.com/ElGuslml/NativeXRenderer) (`native_x_renderer/`, a
+submodule), is MIT. It brings DiligentCore (Apache 2.0), SPIRV-Cross (Apache 2.0), volk (MIT), NVIDIA DLSS
+and NGX (NVIDIA RTX SDKs License; this game offers no DLSS mode, so `nvngx_dlss.dll` is not shipped) and SMAA
+(MIT-style). Their notices: [`native_x_renderer/THIRD_PARTY_NOTICES.md`](https://github.com/ElGuslml/NativeXRenderer/blob/main/THIRD_PARTY_NOTICES.md).
+
+NVIDIA and DLSS are trademarks or registered trademarks of NVIDIA Corporation in the U.S. and other countries.
+
 ## ReXGlue SDK
 
 - **ReXGlue SDK**: https://github.com/rexglue/rexglue-sdk, BSD 3-Clause, Copyright (c) 2026 Tom Clay.
