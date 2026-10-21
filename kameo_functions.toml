@@ -143,3 +143,14 @@ jump_address_on_true = 0x822713E8
 address = 0x8227142C   # bl 0x822d19e0 (the bottom bar)
 name = "KameoLetterboxBarHook"
 jump_address_on_true = 0x82271430
+
+# Quitting from the title screen (src/quit_prompt.cpp, the SDK's rex/ui/overlay/quit_prompt.h): sub_82414408 runs the
+# title sequence, its state a byte at [r29+5] (an object the front end passes; the jump tables at 0x82414654 and
+# 0x824146F4): 1-4 the intro video (kameoIntro), 7 starts frontendbackground, 8 the title screen with "PRESS START"
+# (string 39 of kameoStringsstripped.str, set as the state becomes 8), 9-15 the main menu over it, 16-17 the attract
+# video (RollingDemo), 18-20 leaving. The hook offers the quit prompt while the state is 8: B there asks whether to
+# quit the game. quit_prompt = false disables it.
+[[midasm_hook]]
+address = 0x8241460C   # cmpwi cr6,r10,8 (after lbz r10,5(r29): the state)
+name = "KameoTitleStateHook"
+registers = ["r10"]

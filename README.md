@@ -27,6 +27,8 @@ compiled; the Xbox 360 GPU is emulated by ReXGlue's Xenos backend (derived from 
 - **Ultrawide** (Hor+): on a screen or window wider than 16:9 the game sees more to the sides, and the HUD,
   menus and videos stay 16:9 in the center (both renderers, [`docs/ultrawide.md`](docs/ultrawide.md)).
 - **Cinematics without black bars** (optional, at 16:9 and ultrawide; [`docs/cinematic-bars.md`](docs/cinematic-bars.md)).
+- **Quitting from the title screen**: B on "PRESS START" asks whether to quit the game, A quits and B cancels
+  ([`docs/quit-prompt.md`](docs/quit-prompt.md)).
 - **Game language** chosen in the launcher: English, French, German, Italian, Spanish (Spain or Latin
   America), Japanese, Korean or Traditional Chinese ([`docs/language.md`](docs/language.md)).
 - **Kameo Launcher**: language, monitor, fullscreen / borderless / window, window resolution, renderer,
@@ -103,7 +105,7 @@ Command-line options (`--name=value`, for example Steam launch options) win over
 `--fullscreen=false --window_width=1920 --window_height=1080`,
 `--draw_resolution_scale_x=2 --draw_resolution_scale_y=2`, `--gpu_backend=vulkan`, `--kameo_60fps=true`,
 `--native_x_renderer=true`, `--kameo_ultrawide=true`, `--kameo_no_letterbox=true`, `--anisotropic_override=0` (off; 5 = 16×), `--user_language=4` (French; see
-[`docs/language.md`](docs/language.md)).
+[`docs/language.md`](docs/language.md)), `--quit_prompt=false` (B on the title screen does not ask to quit).
 
 ## How the SDK is modified
 

@@ -71,6 +71,7 @@ set(KAMEO_SOURCES
     src/language.cpp
     src/native_x_renderer_kameo.cpp
     src/options.cpp
+    src/quit_prompt.cpp
     src/startup.cpp
     src/widescreen.cpp
 )
