@@ -1,8 +1,8 @@
 # KameoRecomp - static recompilation of Kameo: Elements of Power (Xbox 360), built on the ReXGlue SDK,
-# with NativeXRenderer (native_x_renderer/, a submodule) as an alternative renderer.
+# drawn by NativeXRenderer (native_x_renderer/, a submodule) or the SDK's Xenos emulation.
 #
-# The SDK is the thirdparty/rexglue-sdk git submodule (official repository, pinned to v0.10.0);
-# the fixes in patches/ are applied to it at configure time (cmake/apply_sdk_patches.cmake).
+# The SDK is the thirdparty/rexglue-sdk git submodule: ElGuslml/rexglue-sdk, branch recomp, the official
+# v0.10.0 with the changes these projects and NativeXRenderer need, one commit each (RECOMP.md there).
 # SDK boilerplate lives in generated/rexglue.cmake.
 
 cmake_minimum_required(VERSION 3.25)
@@ -18,10 +18,15 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_SYSTEM_PROCESSOR MATCHES "^(x
     add_compile_options(-march=x86-64-v2)
 endif()
 
-# Build the SDK from the submodule, with our patches.
+# Build the SDK from the submodule. RECOMP.md marks the recomp branch: a checkout of the official SDK lacks
+# its changes and would not build this project.
 set(REXSDK_DIR "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/rexglue-sdk" CACHE PATH
     "Path to the rexglue-sdk source tree" FORCE)
-include(cmake/apply_sdk_patches.cmake)
+if(NOT EXISTS "${REXSDK_DIR}/RECOMP.md")
+    message(FATAL_ERROR
+        "The ReXGlue SDK submodule (${REXSDK_DIR}) is missing or not on the recomp branch of "
+        "ElGuslml/rexglue-sdk. Run: git submodule sync && git submodule update --init --recursive --force")
+endif()
 
 # Both graphics backends: D3D12 and Vulkan.
 if(WIN32)

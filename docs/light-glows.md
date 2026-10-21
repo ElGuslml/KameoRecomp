@@ -23,7 +23,7 @@ those counts at zero.
 
 ## Fix
 
-The 2026-10-18 change is undone: SDK patch 0026 is removed from [`patches/`](../patches) and NativeXRenderer
+The 2026-10-18 change is undone: SDK patch 0026 is removed from the SDK changes (then `patches/`) and NativeXRenderer
 decision D87 withdraws D79. The quads are not counted, the glows and the sun flare stay off, as before that change.
 
 Nothing to turn on or off. `occlusion_query_enable = false` (the SDK's fake "everything visible" answer) turns all

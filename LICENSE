@@ -22,7 +22,7 @@ SOFTWARE.
 
 ---
 
-This license covers this project's own code only (src/, patches/, cmake/, res/,
+This license covers this project's own code only (src/, cmake/, res/,
 the configuration files and the documentation). It does not cover the ReXGlue
 SDK and its third-party components (see THIRD_PARTY_NOTICES.md), nor Kameo: Elements of
 Power, its code or its assets, which belong to their respective owners.

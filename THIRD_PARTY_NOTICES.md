@@ -17,8 +17,8 @@ NVIDIA and DLSS are trademarks or registered trademarks of NVIDIA Corporation in
 ## ReXGlue SDK
 
 - **ReXGlue SDK**: https://github.com/rexglue/rexglue-sdk, BSD 3-Clause, Copyright (c) 2026 Tom Clay.
-  License: `thirdparty/rexglue-sdk/LICENSE`. This project builds the SDK from source with the patches in
-  `patches/` applied.
+  License: `thirdparty/rexglue-sdk/LICENSE`. This project builds the SDK from source: the `recomp` branch of
+  https://github.com/ElGuslml/rexglue-sdk, the official v0.10.0 with this project's changes as commits.
 - **Xenia**: https://xenia.jp, BSD 3-Clause, Copyright (c) 2022 Ben Vanik and Xenia project contributors.
   Portions of the ReXGlue SDK are derived from Xenia (same license file).
 
@@ -55,6 +55,6 @@ Components used only for tests or other platforms (Catch2, MoltenVK) are not par
 ### LGPL components
 
 FFmpeg and libmspack are statically linked into `rexruntime.dll`. As required by the LGPL, the complete
-source code needed to rebuild that library is available: this repository, the ReXGlue SDK submodule at the
-pinned commit, and the patches in `patches/`. You can modify those components and rebuild `rexruntime.dll`
-with the instructions in `README.md`.
+source code needed to rebuild that library is available: this repository and the ReXGlue SDK submodule at the
+pinned commit of its public `recomp` branch (https://github.com/ElGuslml/rexglue-sdk). You can modify those
+components and rebuild `rexruntime.dll` with the instructions in `README.md`.

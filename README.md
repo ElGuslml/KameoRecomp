@@ -71,7 +71,7 @@ cmake --build --preset win-amd64-release
 ```
 
 - If you cloned without `--recursive`: `git submodule update --init --recursive`.
-- Configuring applies the SDK fixes in [`patches/`](patches/) to `thirdparty/rexglue-sdk` (see below).
+- `thirdparty/rexglue-sdk` is the SDK with this project's changes (see below).
 - The first build translates `default.xex` into C++ (`generated/`) and builds the SDK: it takes a while.
   If it stops with "precompiled header ... has been modified", run the build command again.
 
@@ -107,43 +107,20 @@ Command-line options (`--name=value`, for example Steam launch options) win over
 
 ## How the SDK is modified
 
-`thirdparty/rexglue-sdk` is the official ReXGlue SDK at v0.10.0. The fixes are in [`patches/`](patches/), a
-`git format-patch` series applied at configure time by
-[`cmake/apply_sdk_patches.cmake`](cmake/apply_sdk_patches.cmake). They come from GRAWRecomp (Ghost Recon
-Advanced Warfighter) and POTCAWERecomp (Pirates of the Caribbean: At World's End), where they were found;
-none of them is specific to those games, and the options they add are off by default. Each patch's commit
-message explains the change:
+`thirdparty/rexglue-sdk` is [ElGuslml/rexglue-sdk](https://github.com/ElGuslml/rexglue-sdk), branch `recomp`: the
+official ReXGlue SDK at v0.10.0 with the changes this project, GRAWRecomp (Ghost Recon Advanced Warfighter),
+POTCAWERecomp (Pirates of the Caribbean: At World's End) and [NativeXRenderer](native_x_renderer/README.md) need, one
+commit each. None of the general fixes is specific to one game, and the options they add are off by default; the
+ones for NativeXRenderer change nothing while it is off. The branch's `RECOMP.md` lists them, and each commit message
+explains its change. Until 2026-10-21 they were patch series applied at configure time (`patches/` here and
+NativeXRenderer's `sdk_patches/`).
 
-| Patch | Change |
-|---|---|
-| 0001 | Keep host FP exceptions masked when the game updates the FPSCR |
-| 0002 | Invalidate GPU copies of newly allocated physical memory |
-| 0003 | Code generator: `vpkd3d128` lost the sign when the destination aliases the source |
-| 0004 | `gpu_depth_clamp`: clamp depth instead of clipping in Z, like Xenos (D3D12 and Vulkan) |
-| 0005 | `fullscreen_borderless_window` option |
-| 0006 | `gpu_backend` option to choose D3D12 or Vulkan |
-| 0007 | `XGetLanguage` honors `user_language` |
-| 0008 | No busy waiting when there is no work (timer queue, presenter repaints) |
-| 0009 | `gpu_async_pipelines_no_frame_wait`: do not stall the frame on new pipelines |
-| 0010–0013 | Faster register and shader-constant writes from the command processor |
-| 0014 | Log the guest context on unhandled guest access violations |
-| 0015 | `gpu_guest_fps_limit`: optional frame rate cap for the game |
-| 0016 | `XamUserReadProfileSettings` no longer writes past the game's buffer (title-specific settings larger than their nominal size) |
-| 0017 | `render_target_skip_transfers_on_overwrite`: no EDRAM ownership transfer into a render target that a single triangle, rectangle or quad fully overwrites |
-| 0018 | `render_target_draw_clears`: a draw that writes constant values to a rectangle of its render targets is done as a clear of the render targets owning that EDRAM, never through the alias |
-| 0019 | `d3d12_lazy_resolve`: color resolves kept as host render target copies and textures filled from them by copying, the shared memory written only on demand (no gain measured so far) |
-| 0020 | Occlusion queries: the end pairs with the begin whatever its address and in every EDRAM tile, so host queries are no longer turned off at the first query (D3D12 and Vulkan) |
-| 0021 | SPIR-V: cube maps sampled at a LOD computed in the shader, not with gradients (NVIDIA's Vulkan driver returned garbage in one pixel of each quad), and the LOD bias scale kept finite |
-| 0022 | Code generator: with `non_volatile_as_local` the elided `__savegprlr_N` still stores the return address in the frame's LR slot, which the guest's stack walks read |
-| 0023 | `WAIT_REG_MEM` polls every 100 µs with the high-resolution timer instead of sleeping 1 ms |
-| 0024 | CMake: rexruntime and the GPU plugins are copied next to the executable on every build, not only when it links again |
-| 0025 | Code generator: a `share_registers` function (an SEH funclet, a setjmp caller) keeps its registers across calls when the others are local variables |
+A checkout made before that has the old submodule with the patches applied over it; update it with
+`git submodule sync` and `git submodule update --init --recursive --force`, then configure again.
 
-[NativeXRenderer](native_x_renderer/README.md) (`native_x_renderer/`, a submodule: a native renderer that hooks the
-game's Direct3D calls, developed on POTCAWERecomp and used by GRAWRecomp) brings its own SDK patches
-(`native_x_renderer/sdk_patches/`), applied after this series. They change nothing while NativeXRenderer is off.
-In Kameo it is the default renderer since 2026-10-21; Kameo Launcher's "Renderer" row can choose Xenos instead
-([`docs/native-x-renderer-kameo.md`](docs/native-x-renderer-kameo.md)).
+NativeXRenderer (`native_x_renderer/`, a submodule: a native renderer that hooks the game's Direct3D calls, developed
+on POTCAWERecomp and used by GRAWRecomp) is Kameo's default renderer since 2026-10-21; Kameo Launcher's "Renderer" row
+can choose Xenos instead ([`docs/native-x-renderer-kameo.md`](docs/native-x-renderer-kameo.md)).
 
 ## Credits
 
