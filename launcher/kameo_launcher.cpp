@@ -1464,7 +1464,13 @@ Options OptionsFromConfig(const Config& c, UINT primary_dpi) {
   if (!GetBool(c, "fullscreen", true)) {
     o.display = kWindow;
   } else {
-    o.display = GetBool(c, "fullscreen_borderless_window", false) ? kBorderless : kFullscreen;
+    // fullscreen_exclusive (the SDK's): switch the display mode; otherwise fullscreen is borderless at the
+    // desktop mode, the SDK's default. An options file from before it has fullscreen_borderless_window.
+    bool exclusive = !GetString(c, "fullscreen_exclusive").empty()
+                         ? GetBool(c, "fullscreen_exclusive", false)
+                         : !GetString(c, "fullscreen_borderless_window").empty() &&
+                               !GetBool(c, "fullscreen_borderless_window", false);
+    o.display = exclusive ? kFullscreen : kBorderless;
   }
   // launcher_window_*: the chosen size, kept even when playing fullscreen (see SaveOptions).
   int window_width = GetInt(c, "launcher_window_width", GetInt(c, "window_width", 0));
@@ -1532,7 +1538,7 @@ bool SaveOptions(const std::filesystem::path& path, const Launcher& l) {
   f << "kameo_latin_american_spanish = " << boolean(o.language == 5 && o.latin_american) << "\n";
   f << "monitor = " << o.monitor << "\n";
   f << "fullscreen = " << boolean(o.display != kWindow) << "\n";
-  f << "fullscreen_borderless_window = " << boolean(o.display == kBorderless) << "\n";
+  f << "fullscreen_exclusive = " << boolean(o.display == kFullscreen) << "\n";
   // window_width/height are also the console video mode (VdQueryVideoMode, when there is no
   // video_mode_width/height), and the presenter takes the image aspect ratio from it.
   // In fullscreen they are not written: 1280x720 mode, as always. In a window they are (in logical

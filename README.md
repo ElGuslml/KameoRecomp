@@ -110,12 +110,12 @@ Command-line options (`--name=value`, for example Steam launch options) win over
 ## How the SDK is modified
 
 `thirdparty/rexglue-sdk` is [ElGuslml/rexglue-sdk](https://github.com/ElGuslml/rexglue-sdk), branch `recomp`: the
-official ReXGlue SDK at v0.10.0 with the changes this project, GRAWRecomp (Ghost Recon Advanced Warfighter),
-POTCAWERecomp (Pirates of the Caribbean: At World's End) and [NativeXRenderer](native_x_renderer/README.md) need, one
-commit each. None of the general fixes is specific to one game, and the options they add are off by default; the
-ones for NativeXRenderer change nothing while it is off. The branch's `RECOMP.md` lists them, and each commit message
-explains its change. Until 2026-10-21 they were patch series applied at configure time (`patches/` here and
-NativeXRenderer's `sdk_patches/`).
+official ReXGlue SDK's nightly of 2026-10-02 (v0.10.0 and 24 later commits) with the changes this project, GRAWRecomp
+(Ghost Recon Advanced Warfighter), POTCAWERecomp (Pirates of the Caribbean: At World's End) and
+[NativeXRenderer](native_x_renderer/README.md) need, one commit each. None of the general fixes is specific to one
+game, and the options they add are off by default; the ones for NativeXRenderer change nothing while it is off. The
+branch's `RECOMP.md` lists them, and each commit message explains its change. Until 2026-10-21 they were patch series
+applied at configure time (`patches/` here and NativeXRenderer's `sdk_patches/`).
 
 A checkout made before that has the old submodule with the patches applied over it; update it with
 `git submodule sync` and `git submodule update --init --recursive --force`, then configure again.

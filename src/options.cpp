@@ -64,8 +64,7 @@ void LoadLauncherOptions(const std::filesystem::path& options_path,
               rex::cvar::Query<int32_t>("monitor"),
               rex::cvar::Query<int32_t>("draw_resolution_scale_x"),
               rex::cvar::Query<int32_t>("draw_resolution_scale_y"),
-              fullscreen ? (rex::cvar::Query<bool>("fullscreen_borderless_window") ? "borderless"
-                                                                                  : "fullscreen")
+              fullscreen ? (rex::cvar::Query<bool>("fullscreen_exclusive") ? "fullscreen" : "borderless")
                          : "window",
               rex::cvar::Query<int32_t>("window_width"), rex::cvar::Query<int32_t>("window_height"),
               rex::cvar::Query<int32_t>("video_mode_width"),

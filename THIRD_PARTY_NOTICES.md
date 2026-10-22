@@ -18,7 +18,8 @@ NVIDIA and DLSS are trademarks or registered trademarks of NVIDIA Corporation in
 
 - **ReXGlue SDK**: https://github.com/rexglue/rexglue-sdk, BSD 3-Clause, Copyright (c) 2026 Tom Clay.
   License: `thirdparty/rexglue-sdk/LICENSE`. This project builds the SDK from source: the `recomp` branch of
-  https://github.com/ElGuslml/rexglue-sdk, the official v0.10.0 with this project's changes as commits.
+  https://github.com/ElGuslml/rexglue-sdk, the official nightly of 2026-10-02 (after v0.10.0) with this
+  project's changes as commits.
 - **Xenia**: https://xenia.jp, BSD 3-Clause, Copyright (c) 2022 Ben Vanik and Xenia project contributors.
   Portions of the ReXGlue SDK are derived from Xenia (same license file).
 

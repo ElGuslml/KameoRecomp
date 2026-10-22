@@ -2,7 +2,8 @@
 # drawn by NativeXRenderer (native_x_renderer/, a submodule) or the SDK's Xenos emulation.
 #
 # The SDK is the thirdparty/rexglue-sdk git submodule: ElGuslml/rexglue-sdk, branch recomp, the official
-# v0.10.0 with the changes these projects and NativeXRenderer need, one commit each (RECOMP.md there).
+# nightly of 2026-10-02 (v0.10.0 and 24 later commits) with the changes these projects and NativeXRenderer
+# need, one commit each (RECOMP.md there).
 # SDK boilerplate lives in generated/rexglue.cmake.
 
 cmake_minimum_required(VERSION 3.25)
