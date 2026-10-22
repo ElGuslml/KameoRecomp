@@ -51,6 +51,10 @@ NVIDIA and DLSS are trademarks or registered trademarks of NVIDIA Corporation in
 | stb_image | MIT / public domain | header in `stb/stb_image.h` |
 | RenderDoc in-application API | MIT | header in `renderdoc/renderdoc_app.h` |
 
+- **Barlow** and Barlow Condensed, the fonts of the SDK's dialogs (the achievement toast and list, the quit prompt;
+  `thirdparty/rexglue-sdk/resources/fonts/`, embedded in the executable): https://github.com/jpt/barlow, Copyright
+  2017 The Barlow Project Authors, SIL Open Font License 1.1 (`resources/fonts/OFL.txt` in the SDK).
+
 Components used only for tests or other platforms (Catch2, MoltenVK) are not part of the Windows executables.
 
 ### LGPL components
