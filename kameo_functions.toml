@@ -81,6 +81,14 @@ address = 0x82440FA4   # fmadds f5,f8,f0,f13 (first of the three that write the 
 name = "KameoCameraFollowHook"
 registers = ["f8", "f6", "f31"]
 
+# Kameo's blue bar at 60 FPS (src/framerate.cpp): sub_823A0990, run every frame while an elemental's ability drains
+# the bar (Pummel Weed's RT + LT), takes 3 (the float at 0x8273CF68) from it per frame and sets it through the stat
+# setter sub_8217EBA8; the hook scales the cost by the frame's duration in 30 Hz frames when kameo_60fps is on.
+[[midasm_hook]]
+address = 0x823A0B4C   # li r4,0 (after fsubs f1,f0,f29: the bar minus the cost)
+name = "KameoElementalDrainHook"
+registers = ["f0", "f1", "f29"]
+
 # Language (src/language.cpp): sub_820B4F08 turns Spanish into the game's Latin American Spanish (10,
 # the "Mexican" folder) only on a North American console; the hook reports that region for Spanish
 # when kameo_latin_american_spanish is on (the SDK's XGetGameRegion returns 0xFFFF).

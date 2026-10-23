@@ -21,9 +21,12 @@ for Xenia: the automatic camera following. In X and Z the camera's target is its
 times the frame time, and the camera then moves towards it by a factor that is again proportional to the
 frame time, so the movement per second halves at 60 FPS: the camera lags behind Kameo.
 
+Other code steps by a fixed amount every frame, sized for 30 FPS, so it runs twice as fast at 60. Found so far:
+Kameo's blue bar, drained by an elemental's ability (Pummel Weed's RT + LT), lasted 12 s at 30 FPS and 6 s at 60.
+
 ## Fix
 
-`src/framerate.cpp` with two `[[midasm_hook]]`s in `kameo_functions.toml`, both active only with
+`src/framerate.cpp` with three `[[midasm_hook]]`s in `kameo_functions.toml`, all active only with
 `kameo_60fps`:
 
 - In the Direct3D swap routine, right after the present interval is read, 2 becomes 1. This is what
@@ -31,12 +34,14 @@ frame time, so the movement per second halves at 60 FPS: the camera lags behind 
 - In the camera following, the X and Z distances to the target are divided by the frame time × 30, which
   gives the follow factor `v / 30` of ISpectre23's "FPS Camera Fix" (Xenia patch at `0x82440F18`–
   `0x82440FB8`). At exactly 30 FPS both are the original values; Y (height) is unchanged, as in the patch.
+- In the ability that drains the blue bar (`sub_823A0990`, every frame), the cost per frame (3) is multiplied by
+  the frame time × 30, so the bar drains at its 30 FPS speed (90 per second) at any frame rate.
 
 ## Turning it off
 
 Choose **Frame rate: 30 FPS** in Kameo Launcher (it writes `kameo_60fps = false` to `kameo_options.toml`)
 or start the game with `--kameo_60fps=false`. To see the camera without its fix at 60 FPS:
-`--kameo_camera_fix=false`.
+`--kameo_camera_fix=false`; the per-frame steps without their fix: `--kameo_frame_step_fix=false`.
 
 ## What to watch for
 
@@ -48,3 +53,4 @@ to 30 FPS in the launcher.
 |---|---|---|
 | `kameo_60fps` | `false` | `true` presents every vblank (60 FPS); `false` keeps the original 30 FPS |
 | `kameo_camera_fix` | `true` | With `kameo_60fps`: camera following at its 30 FPS speed; `false` = original code |
+| `kameo_frame_step_fix` | `true` | With `kameo_60fps`: code stepped per frame (the blue bar) at its 30 FPS speed; `false` = original code |

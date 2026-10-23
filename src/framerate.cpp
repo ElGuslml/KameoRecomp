@@ -16,15 +16,24 @@
 // 60 FPS it follows at half the speed. ISpectre23's patch uses v / 30 instead of v * dt for X and
 // Z (the same value at 30 FPS); Y (the height, not dt-scaled) keeps v * dt.
 //
-// Both hooks are in kameo_functions.toml and do nothing unless kameo_60fps is on; the camera one
-// can be turned off on its own with kameo_camera_fix = false (to compare).
+// Other code steps by a fixed amount per frame, made for 30 FPS, so it runs twice as fast at 60:
+// Kameo's blue bar, drained by an elemental's ability (Pummel Weed's RT + LT), lasted 12 s at 30 FPS
+// and 6 s at 60 (Gustavo). Its hook scales the per-frame step by the frame's duration in 30 Hz
+// frames, dt * 30, so it keeps the console's speed at any frame rate.
+//
+// The hooks are in kameo_functions.toml and do nothing unless kameo_60fps is on; the camera one can
+// be turned off on its own with kameo_camera_fix = false, the per-frame steps with
+// kameo_frame_step_fix = false (to compare).
 
 #include <rex/cvar.h>
 #include <rex/logging.h>
 #include <rex/ppc/context.h>
+#include <rex/system/kernel_state.h>
+#include <rex/system/xmemory.h>
 
 #include <atomic>
 #include <cstdint>
+#include <cstring>
 
 REXCVAR_DEFINE_BOOL(kameo_60fps, false, "Kameo",
                     "Present every vblank (60 FPS) instead of every second one (30 FPS, the "
@@ -34,6 +43,27 @@ REXCVAR_DEFINE_BOOL(kameo_camera_fix, true, "Kameo",
                     "With kameo_60fps: keep the automatic camera following at the speed it has at "
                     "30 FPS (ISpectre23's FPS Camera Fix). false = the original code, which follows "
                     "at half the speed at 60 FPS");
+REXCVAR_DEFINE_BOOL(kameo_frame_step_fix, true, "Kameo",
+                    "With kameo_60fps: the game code that steps by a fixed amount per frame (made for 30 FPS) "
+                    "keeps the speed it has at 30 FPS: Kameo's blue bar drains as on the console. false = the "
+                    "original code, twice as fast at 60 FPS");
+
+namespace {
+
+// The engine's frame time in 30 Hz frames: dt (seconds, the float at 0x82755760, measured by
+// sub_820BEBB0 and clamped to 0.1 s) times 30. 1 at 30 FPS, 0.5 at 60.
+double Frames30() {
+  auto* kernel = rex::system::kernel_state();
+  if (!kernel || !kernel->memory()) return 1.0;
+  uint32_t bits;
+  std::memcpy(&bits, kernel->memory()->virtual_membase() + 0x82755760, 4);
+  bits = __builtin_bswap32(bits);
+  float dt;
+  std::memcpy(&dt, &bits, 4);
+  return dt > 0.0f ? double(dt) * 30.0 : 1.0;
+}
+
+}  // namespace
 
 // [[midasm_hook]] 0x820CF918 (sub_820CF868, Direct3D Swap): before "cmplwi cr6,r10,1", r10 = the
 // D3DRS_PRESENTINTERVAL render state just loaded from the device (0 = default, 1 = one, 2 = two,
@@ -62,4 +92,15 @@ void KameoCameraFollowHook(PPCRegister& f8, PPCRegister& f6, PPCRegister& f31) {
   }
   f8.f64 = double(float(f8.f64 / f31.f64));
   f6.f64 = double(float(f6.f64 / f31.f64));
+}
+
+// [[midasm_hook]] 0x823A0B4C (sub_823A0990, called every frame from sub_821CB988 while an elemental's
+// ability drains Kameo's blue bar): after "fsubs f1,f0,f29", f1 = the bar (f0, the stat at +16 of
+// Kameo's stats) minus the cost per frame (f29 = 3, the float at 0x8273CF68), which the stat setter
+// sub_8217EBA8 stores next. The cost times dt * 30 drains the bar at its 30 FPS speed (90 a second).
+void KameoElementalDrainHook(PPCRegister& f0, PPCRegister& f1, PPCRegister& f29) {
+  if (!REXCVAR_GET(kameo_60fps) || !REXCVAR_GET(kameo_frame_step_fix)) {
+    return;
+  }
+  f1.f64 = double(float(f0.f64 - f29.f64 * Frames30()));
 }
