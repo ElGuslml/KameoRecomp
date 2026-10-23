@@ -418,7 +418,7 @@ void App::KeyboardPage(const ImRect& rect) {
     DrawLabel(kColumn, ImVec2(right - slot_width, top), col::kLabel, t_.column_secondary);
     FillRect(ImRect(ImVec2(table.Min.x, table.Min.y + header_height),
                     ImVec2(table.Max.x, table.Min.y + header_height + Snap(Px(1.0f)))),
-             Hex(0x232A35));
+             col::kGlyph);
   }
   ImRect list(ImVec2(table.Min.x, table.Min.y + header_height + Snap(Px(1.0f))),
               ImVec2(table.Max.x, table.Max.y - Px(6.0f)));

@@ -567,7 +567,7 @@ ButtonColors ColorsOf(ButtonKind kind) {
     case ButtonKind::kPrimary:
       return {col::kAccent, 0, col::kOnAccent, col::kOnAccent};
     case ButtonKind::kHero:
-      return {Hex(0x0C1524), Hex(0x33425A), col::kText, col::kTextSecondary};
+      return {col::kHeroButton, col::kHeroButtonBorder, col::kText, col::kTextSecondary};
     case ButtonKind::kOutline:
       return {col::kCard, col::kOutline, col::kText, col::kTextMuted};
     case ButtonKind::kGhost:
@@ -671,7 +671,7 @@ bool Segmented(const char* id, ImVec2 pos, const SegmentedSpec& spec, std::span<
       text = Brighten(text);
     }
     if (!enabled) {
-      background = background ? Fade(Hex(0x3A4250), 1.0f) : 0;
+      background = background ? col::kDashed : 0;
       text = Fade(on ? col::kTextSoft : col::kTextDim, 0.8f);
     }
     if (background) {
@@ -888,7 +888,7 @@ void BeginScroll(const char* id, const ImRect& rect) {
   ImGui::PushStyleColor(ImGuiCol_ScrollbarBg, ImVec4(0, 0, 0, 0));
   ImGui::PushStyleColor(ImGuiCol_ScrollbarGrab, ImGui::ColorConvertU32ToFloat4(col::kOutline));
   ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabHovered, ImGui::ColorConvertU32ToFloat4(col::kDashed));
-  ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, ImGui::ColorConvertU32ToFloat4(Hex(0x4A5262)));
+  ImGui::PushStyleColor(ImGuiCol_ScrollbarGrabActive, ImGui::ColorConvertU32ToFloat4(col::kScrollbarActive));
   ImGui::BeginChild(id, rect.GetSize(), ImGuiChildFlags_NavFlattened, ImGuiWindowFlags_NoBackground);
 }
 

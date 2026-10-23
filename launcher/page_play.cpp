@@ -30,7 +30,7 @@ void App::PlayPage(const ImRect& rect) {
   ImRect hero(content.Min, ImVec2(content.Max.x, content.Max.y - cards_height - Px(16.0f)));
 
   // The art and the game's name.
-  FillRect(hero, Hex(0x142033), 12.0f);
+  FillRect(hero, col::kHeroFill, 12.0f);
   // Cropped around the art's focus (game.h): a wide window keeps it whole.
   DrawArt(Art::kHero, hero, ImVec2(game::kHeroFocusX, game::kHeroFocusY), 12.0f);
   float left = hero.Min.x + Px(40.0f);
@@ -194,7 +194,7 @@ void App::PlayPage(const ImRect& rect) {
 
 void App::Notice(const ImRect& rect, bool error, const char* text, const char* link, Page link_page) {
   ImU32 color = error ? col::kError : col::kSuccess;
-  FillRect(rect, error ? col::kErrorTint : Hex(0x17281F), 10.0f);
+  FillRect(rect, error ? col::kErrorTint : col::kNoticeTint, 10.0f);
   StrokeRect(rect, Fade(color, 0.55f), 10.0f);
   ImVec2 icon(rect.Min.x + Px(16.0f), rect.Min.y + (rect.GetHeight() - Px(20.0f)) * 0.5f);
   DrawIcon(error ? Icon::kAlert : Icon::kCheck, icon, 20.0f, color, 2.0f);

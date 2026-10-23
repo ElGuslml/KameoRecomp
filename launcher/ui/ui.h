@@ -1,5 +1,5 @@
-// The launcher's look: the palette, the type, the icons and the widgets of Gustavo's mockup, drawn with
-// Dear ImGui.
+// The launcher's look: the type, the icons and the widgets of Gustavo's mockup, drawn with Dear ImGui, in the
+// game's palette (palette.h, each game's own).
 //
 // Everything is laid out in the mockup's units ("dp": its CSS pixels, for a 1280x760 window) and drawn at
 // Scale() pixels per dp, which follows the window (app.cpp). Widgets take absolute rectangles in pixels,
@@ -17,54 +17,10 @@
 #include <string>
 #include <string_view>
 
+#include "palette.h"
+#include "ui/color.h"
+
 namespace ui {
-
-// 0xRRGGBB as an ImGui color.
-constexpr ImU32 Hex(uint32_t rgb, uint32_t alpha = 255) {
-  return (alpha << IM_COL32_A_SHIFT) | (((rgb >> 16) & 0xFF) << IM_COL32_R_SHIFT) |
-         (((rgb >> 8) & 0xFF) << IM_COL32_G_SHIFT) | ((rgb & 0xFF) << IM_COL32_B_SHIFT);
-}
-
-// The mockup's palette.
-namespace col {
-inline constexpr ImU32 kBackground = Hex(0x0D1015);
-inline constexpr ImU32 kSidebar = Hex(0x12161C);
-inline constexpr ImU32 kSidebarBorder = Hex(0x222935);
-inline constexpr ImU32 kCard = Hex(0x151A21);
-inline constexpr ImU32 kCardRaised = Hex(0x1A1F27);
-inline constexpr ImU32 kCardSelected = Hex(0x1C222C);
-inline constexpr ImU32 kChip = Hex(0x20262F);
-inline constexpr ImU32 kField = Hex(0x20262F);
-inline constexpr ImU32 kFieldBorder = Hex(0x2A313D);
-inline constexpr ImU32 kFieldDisabled = Hex(0x181D25);
-inline constexpr ImU32 kDivider = Hex(0x20262F);
-inline constexpr ImU32 kTrack = Hex(0x262D38);
-inline constexpr ImU32 kSegment = Hex(0x1F2530);
-inline constexpr ImU32 kOutline = Hex(0x2E3642);
-inline constexpr ImU32 kDashed = Hex(0x3A4250);
-inline constexpr ImU32 kGlyph = Hex(0x232A35);
-inline constexpr ImU32 kRadioOff = Hex(0x5A6472);
-inline constexpr ImU32 kText = Hex(0xE9ECF1);
-inline constexpr ImU32 kTextSoft = Hex(0xC3CAD4);
-inline constexpr ImU32 kTextSecondary = Hex(0xB4BCC8);
-inline constexpr ImU32 kTextMuted = Hex(0xA3ACB9);
-inline constexpr ImU32 kLabel = Hex(0x8E98A6);
-inline constexpr ImU32 kTextDim = Hex(0x7C8695);
-inline constexpr ImU32 kAccent = Hex(0xE0A93B);
-inline constexpr ImU32 kAccentLight = Hex(0xF2C66B);
-inline constexpr ImU32 kOnAccent = Hex(0x17120A);
-inline constexpr ImU32 kAccentTint = Hex(0x2A2618);
-inline constexpr ImU32 kDonate = Hex(0xEF7458);
-inline constexpr ImU32 kOnDonate = Hex(0x1A0D09);
-inline constexpr ImU32 kSuccess = Hex(0x5BC489);
-inline constexpr ImU32 kSuccessTint = Hex(0x1B3A2A);
-inline constexpr ImU32 kError = Hex(0xF07B6B);
-inline constexpr ImU32 kErrorTint = Hex(0x3A1F1C);
-inline constexpr ImU32 kGlyphA = Hex(0x5BC489);
-inline constexpr ImU32 kGlyphB = Hex(0xF07B6B);
-inline constexpr ImU32 kGlyphX = Hex(0x6AA6F2);
-inline constexpr ImU32 kGlyphY = Hex(0xE8C547);
-}  // namespace col
 
 // The color with its alpha multiplied by `alpha`.
 ImU32 Fade(ImU32 color, float alpha);

@@ -131,25 +131,41 @@ void App::PollInstall() {
   }
 }
 
-// The art panel left of the setup screens, with the game's name.
+// The art panel left of the setup screens, with the game's name: straight on the art with the tagline at its foot, or
+// (game.h's kInstallTitleCard) in a card 40 dp from its edges, padded 24 dp, the background at 88 % over the art.
 void App::InstallArt(const ImRect& rect) {
-  FillRect(rect, Hex(0x142033));
+  FillRect(rect, col::kInstallArtFill);
   DrawArt(Art::kInstall, rect, ImVec2(0.5f, 1.0f));
+  constexpr Type kBrand{Font::kSemiBold, 11, 0.12f};
+  constexpr Type kKicker{Font::kBold, 12, 0.16f};
+  constexpr Type kFoot{Font::kRegular, 13};
   float x = rect.Min.x + Px(40.0f);
   float y = rect.Min.y + Px(40.0f);
+  float width = rect.GetWidth() - Px(80.0f);
+  if (game::kInstallTitleCard) {
+    float inner = width - Px(48.0f);
+    float height = Px(24.0f) + Px(40.0f) + Px(22.0f) + LineHeight(kKicker) + Px(4.0f) + Px(48.0f) * 0.95f + Px(10.0f) +
+                   DrawParagraph(kFoot, ImVec2(0, 0), inner, 1.2f, 0, t_.tagline, false) + Px(24.0f);
+    FillRect(ImRect(ImVec2(x, y), ImVec2(x + width, y + height)), Fade(col::kBackground, 0.88f), 12.0f);
+    x += Px(24.0f);
+    y += Px(24.0f);
+    width = inner;
+  }
   ImRect logo(ImVec2(x, y), ImVec2(x + Px(40.0f), y + Px(40.0f)));
-  FillRect(logo, col::kAccent, 8.0f);
+  FillRect(logo, col::kAccent, game::kBrandRound ? 20.0f : 8.0f);
   DrawIcon(Icon::kBrand, ImVec2(logo.Min.x + Px(9.0f), logo.Min.y + Px(9.0f)), 22.0f, col::kOnAccent, 2.0f);
-  constexpr Type kBrand{Font::kSemiBold, 11, 0.12f};
   DrawLabel(kBrand, ImVec2(logo.Max.x + Px(12.0f), y), col::kTextMuted, t_.brand, Px(40.0f));
-  y += Px(40.0f) + Px(28.0f);
-  constexpr Type kKicker{Font::kBold, 12, 0.16f};
+  y += Px(40.0f) + (game::kInstallTitleCard ? Px(22.0f) : Px(28.0f));
   DrawLabel(kKicker, ImVec2(x, y), col::kAccent, game::kArtKicker);
   y += LineHeight(kKicker) + Px(4.0f);
   DrawLabel(Type{Font::kCondensedBold, 48}, ImVec2(x, y), col::kText, game::kArtTitle, Px(48.0f) * 0.95f);
-  constexpr Type kFoot{Font::kRegular, 13};
-  DrawParagraph(kFoot, ImVec2(x, rect.Max.y - Px(32.0f) - LineHeight(kFoot) * 2.0f), rect.GetWidth() - Px(80.0f), 1.2f,
-                col::kTextMuted, t_.tagline);
+  if (game::kInstallTitleCard) {
+    y += Px(48.0f) * 0.95f + Px(10.0f);
+    DrawParagraph(kFoot, ImVec2(x, y), width, 1.2f, col::kTextMuted, t_.tagline);
+  } else {
+    DrawParagraph(kFoot, ImVec2(x, rect.Max.y - Px(32.0f) - LineHeight(kFoot) * 2.0f), width, 1.2f, col::kTextMuted,
+                  t_.tagline);
+  }
 }
 
 // The four steps along the top: done (a check on accent), current (accent ring), to come (grey).
@@ -331,11 +347,11 @@ void App::InstallScreen(ImVec2 size) {
 
       if (invalid) {
         ImRect r(ImVec2(x, y), ImVec2(x + width, y + error_card));
-        FillRect(r, Hex(0x1C1415), 12.0f);
-        StrokeRect(r, Hex(0x5A2C26), 12.0f);
+        FillRect(r, col::kErrorPanel, 12.0f);
+        StrokeRect(r, col::kErrorPanelBorder, 12.0f);
         float cy = r.Min.y + Px(20.0f);
         ImRect box(ImVec2(r.Min.x + Px(20.0f), cy), ImVec2(r.Min.x + Px(64.0f), cy + Px(44.0f)));
-        FillRect(box, Hex(0x3A1E1B), 8.0f);
+        FillRect(box, col::kErrorBadge, 8.0f);
         DrawIcon(Icon::kAlert, ImVec2(box.Min.x + Px(11.0f), box.Min.y + Px(11.0f)), 22.0f, col::kError, 2.0f);
         float tx = box.Max.x + Px(16.0f);
         DrawLabel(kErrorTitle, ImVec2(tx, cy), col::kError, error_title);
@@ -364,7 +380,7 @@ void App::InstallScreen(ImVec2 size) {
       } else {
         // The drop zone, with its button for the file dialog.
         ImRect zone(ImVec2(x, y), ImVec2(x + width, y + Px(168.0f)));
-        FillRect(zone, Hex(0x11151B), 12.0f);
+        FillRect(zone, col::kDropZone, 12.0f);
         DashedRect(zone, col::kDashed, 12.0f, 6.0f, 4.0f);
         constexpr Type kDrop{Font::kSemiBold, 15};
         ButtonSpec browse{ButtonKind::kOutline, Type{Font::kSemiBold, 14}, 40, 18, 8};
@@ -388,7 +404,7 @@ void App::InstallScreen(ImVec2 size) {
           y += Px(14.0f);
           ImRect r(ImVec2(x, y), ImVec2(x + width, y + card));
           FillRect(r, col::kCard, 10.0f);
-          StrokeRect(r, valid ? Hex(0x2F5A42) : col::kSidebarBorder, 10.0f);
+          StrokeRect(r, valid ? col::kValidBorder : col::kSidebarBorder, 10.0f);
           ImRect box(ImVec2(r.Min.x + Px(16.0f), r.Min.y + (card - Px(44.0f)) * 0.5f),
                      ImVec2(r.Min.x + Px(60.0f), r.Min.y + (card + Px(44.0f)) * 0.5f));
           FillRect(box, col::kChip, 8.0f);
@@ -535,19 +551,23 @@ void App::InstallScreen(ImVec2 size) {
 
     case InstallStep::kDone: {
       float width = std::min(main.GetWidth(), Px(600.0f));
-      float lead = DrawParagraph(kLead, ImVec2(0, 0), width, 1.55f, 0, t_.done_text, false);
+      // The game's own (game.cpp), or the launcher's.
+      const game::GameTexts& own = game::GameTextsFor(language_);
+      const char* done_title = own.done_title ? own.done_title : t_.done_title;
+      const char* done_text = own.done_text ? own.done_text : t_.done_text;
+      float lead = DrawParagraph(kLead, ImVec2(0, 0), width, 1.55f, 0, done_text, false);
       constexpr Type kNote{Font::kRegular, 13};
       float note = Px(14.0f) * 2.0f + DrawParagraph(kNote, ImVec2(0, 0), width - Px(32.0f), 1.5f, 0, t_.delete_iso, false);
       float height = Px(72.0f) + Px(28.0f) + Px(48.0f) + Px(14.0f) + lead + Px(24.0f) + note;
       float y = centered(height);
       float x = main.Min.x;
       ImRect tile(ImVec2(x, y), ImVec2(x + Px(72.0f), y + Px(72.0f)));
-      FillRect(tile, Hex(0x1B3326), 16.0f);
+      FillRect(tile, col::kDoneTile, 16.0f);
       DrawIcon(Icon::kCheck, ImVec2(tile.Min.x + Px(18.0f), tile.Min.y + Px(18.0f)), 36.0f, col::kSuccess, 2.4f);
       y += Px(72.0f) + Px(28.0f);
-      DrawLabel(kHeading, ImVec2(x, y), col::kText, t_.done_title, Px(48.0f));
+      DrawLabel(kHeading, ImVec2(x, y), col::kText, done_title, Px(48.0f));
       y += Px(48.0f) + Px(14.0f);
-      DrawParagraph(kLead, ImVec2(x, y), width, 1.55f, col::kTextSecondary, t_.done_text);
+      DrawParagraph(kLead, ImVec2(x, y), width, 1.55f, col::kTextSecondary, done_text);
       y += lead + Px(24.0f);
       ImRect box(ImVec2(x, y), ImVec2(x + width, y + note));
       FillRect(box, col::kCard, 10.0f);

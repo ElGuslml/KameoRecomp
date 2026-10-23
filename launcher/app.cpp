@@ -434,7 +434,7 @@ void App::Sidebar(const ImRect& rect) {
 
   // The brand: the game's mark on accent and its name.
   ImRect logo(ImVec2(x + Px(8.0f), y), ImVec2(x + Px(48.0f), y + Px(40.0f)));
-  FillRect(logo, col::kAccent, 8.0f);
+  FillRect(logo, col::kAccent, game::kBrandRound ? 20.0f : 8.0f);
   DrawIcon(Icon::kBrand, ImVec2(logo.Min.x + Px(9.0f), logo.Min.y + Px(9.0f)), 22.0f, col::kOnAccent, 2.0f);
   constexpr Type kBrandTitle{Font::kCondensedBold, 20};
   constexpr Type kBrandSubtitle{Font::kSemiBold, 11, 0.12f};

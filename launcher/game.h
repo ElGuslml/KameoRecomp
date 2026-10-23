@@ -1,6 +1,7 @@
 // This game's profile: everything the launcher knows about the game it belongs to. The rest of launcher\ is the same
-// for every game (recomp-tools' template copies it); game.h and game.cpp (the game's own texts) are each game's, with
-// the art (launcher\art), the icon (res\icon.ico) and the version (res\version.h).
+// for every game (recomp-tools' template copies it); game.h, game.cpp (the game's own texts) and palette.h (its
+// colors) are each game's, with the art (launcher\art), the icon (res\icon.ico) and the version
+// (res\version.h).
 
 #pragma once
 
@@ -30,16 +31,20 @@ inline constexpr const char* kVersion = KAMEORECOMP_VERSION_STR;
 // --- The look ---
 
 // The title the art and the sidebar show: a small line above, the name below.
-inline constexpr const char* kArtKicker = "KAMEO";
-inline constexpr const char* kArtTitle = "Elements of Power";
+inline constexpr const char* kArtKicker = "ELEMENTS OF POWER";
+inline constexpr const char* kArtTitle = "KAMEO";
 // The mark in the logo beside it (the sidebar, the first run): an icon's SVG paths in a 24-unit box, stroked as the
-// launcher's icons are (ui.cpp). The template's disc, until Gustavo's mockup gives the game its own.
-inline constexpr const char* kBrandIcon =
-    "<circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='2.5'/><path d='M12 3a9 9 0 0 1 9 9'/>";
+// launcher's icons are (ui.cpp). A leaf (Gustavo's mockup).
+inline constexpr const char* kBrandIcon = "<path d='M5 19c0-8 6-14 14-14 0 8-6 14-14 14z'/><path d='M5 19l8-8'/>";
 // Where the Play page crops its art (launcher\art\hero.svg) in a window of another shape: the point kept in view,
-// as fractions of the art's width and height.
-inline constexpr float kHeroFocusX = 0.7f;
-inline constexpr float kHeroFocusY = 0.4f;
+// as fractions of the art's width and height (the elemental orb, at 470, 210 of 1000 x 524).
+inline constexpr float kHeroFocusX = 0.47f;
+inline constexpr float kHeroFocusY = 0.40f;
+// The logo's mark on a disc instead of a rounded square.
+inline constexpr bool kBrandRound = true;
+// The first run's art panel: the game's name in a dark card over the art, with the tagline, instead of straight on
+// the art with the tagline at its foot.
+inline constexpr bool kInstallTitleCard = true;
 
 // --- The disc ---
 
@@ -138,6 +143,9 @@ struct GameTexts {
   const char* welcome_text;
   // kToggles' rows: a title and a hint each.
   std::array<const char*, kToggles.size() * 2> toggles;
+  // The first run's last screen (the game installed), in the game's spirit; null: the launcher's own.
+  const char* done_title = nullptr;
+  const char* done_text = nullptr;
 };
 // In the language of the launcher's texts (an XLanguage); missing ones fall back to English.
 const GameTexts& GameTextsFor(uint32_t language);

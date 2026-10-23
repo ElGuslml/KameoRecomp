@@ -1,26 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 760">
-<!-- The first-run screens' side art: the template's placeholder, an abstract disc. Replace it with the game's own
-     (drawn with preserveAspectRatio "xMidYMax slice"; installer\make_images.ps1 renders the installer's from it). -->
-<defs>
-  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stop-color="#18263D"/>
-    <stop offset="1" stop-color="#0E1726"/>
-  </linearGradient>
-  <radialGradient id="glow" cx="0.62" cy="0.46" r="0.6">
-    <stop offset="0" stop-color="#2B4266" stop-opacity="0.9"/>
-    <stop offset="1" stop-color="#2B4266" stop-opacity="0"/>
-  </radialGradient>
-</defs>
-<rect width="440" height="760" fill="url(#sky)"/>
-<rect width="440" height="760" fill="url(#glow)"/>
-<g fill="none" stroke="#2A3D5E" stroke-width="1.5">
-  <circle cx="270" cy="350" r="170"/>
-  <circle cx="270" cy="350" r="136" stroke-opacity="0.7"/>
+<!-- The first-run screens' side art, from Gustavo's mockup (drawn with preserveAspectRatio "xMidYMax slice"; installer\make_images.ps1 renders the installer's from it). -->
+<rect width="440" height="760" fill="#12302A"></rect>
+<g fill="#2C5A4C"><circle cx="200" cy="250" r="1.6"></circle><circle cx="300" cy="230" r="1.2"></circle><circle cx="380" cy="280" r="1.6"></circle><circle cx="260" cy="300" r="1.2"></circle><circle cx="160" cy="310" r="1.2"></circle></g>
+<path d="M210 520 L240 470 L262 476 L284 432 L294 396 L304 432 L322 446 L334 412 L344 446 L366 462 L400 520 Z" fill="#0F2621"></path>
+<rect x="291" y="376" width="6" height="22" fill="#0F2621"></rect>
+<path d="M287 376 h14 l-7 -12 z" fill="#0F2621"></path>
+<g fill="#F2894B"><rect x="290" y="440" width="6" height="9" rx="2"></rect><rect x="314" y="466" width="6" height="9" rx="2"></rect><rect x="264" y="482" width="6" height="9" rx="2"></rect></g>
+<path d="M0 520 Q 60 494 120 516 T 240 512 T 360 520 T 480 510 V760 H0Z" fill="#1A3D34"></path>
+<g fill="#163830">
+<path d="M330 760 C 338 660 344 600 338 520 L 366 520 C 360 600 368 660 380 760 Z"></path>
+<circle cx="352" cy="510" r="48"></circle><circle cx="320" cy="530" r="32"></circle><circle cx="388" cy="528" r="34"></circle>
 </g>
-<circle cx="270" cy="350" r="150" fill="#1C2D49"/>
-<path d="M270 200 A150 150 0 0 1 411 300 L270 350 Z" fill="#24395B"/>
-<circle cx="270" cy="350" r="52" fill="#142033"/>
-<circle cx="270" cy="350" r="52" fill="none" stroke="#33496D" stroke-width="2"/>
-<circle cx="270" cy="350" r="16" fill="#0E1726"/>
-<g fill="#33445F"><circle cx="40" cy="250" r="1.6"/><circle cx="120" cy="140" r="1.2"/><circle cx="60" cy="560" r="1.6"/><circle cx="390" cy="620" r="1.2"/><circle cx="170" cy="660" r="1.2"/></g>
+<g fill="#0E201B">
+<path d="M0 760 L 0 0 L 120 0 C 110 140 104 280 108 420 C 112 560 130 660 170 760 Z"></path>
+</g>
+<path d="M30 60 C 90 90 120 90 118 140 C 116 190 20 200 20 250 C 20 300 112 310 112 360 C 112 410 20 420 24 470 C 28 520 110 540 130 600" fill="none" stroke="#2F6B45" stroke-width="9" stroke-linecap="round"></path>
+<g fill="#10261F"><circle cx="70" cy="-20" r="130"></circle><circle cx="220" cy="-40" r="110"></circle><circle cx="380" cy="-30" r="100"></circle></g>
+<g stroke="#2F6B45" stroke-width="3"><path d="M180 0 V 110"></path><path d="M240 0 V 66"></path><path d="M360 0 V 130"></path></g>
+<g fill="#F2B04B"><ellipse cx="180" cy="128" rx="14" ry="20"></ellipse><ellipse cx="240" cy="80" rx="11" ry="15"></ellipse><ellipse cx="360" cy="148" rx="14" ry="20"></ellipse></g>
+<g fill="#FFD98A"><circle cx="176" cy="122" r="4"></circle><circle cx="237" cy="76" r="3"></circle><circle cx="356" cy="142" r="4"></circle></g>
+<g fill="#2F6B45"><path d="M166 110 q 14 -10 28 0 z"></path><path d="M230 66 q 10 -8 20 0 z"></path><path d="M346 130 q 14 -10 28 0 z"></path></g>
+<circle cx="250" cy="600" r="62" fill="#86A8FF" opacity="0.16"></circle>
+<circle cx="250" cy="600" r="42" fill="#86A8FF" opacity="0.28"></circle>
+<circle cx="250" cy="600" r="26" fill="#D6E2FF"></circle>
+<ellipse cx="250" cy="600" rx="84" ry="30" fill="none" stroke="#86A8FF" stroke-width="2" stroke-dasharray="4 8" opacity="0.7"></ellipse>
+<circle cx="168" cy="594" r="8" fill="#F2894B"></circle>
+<circle cx="330" cy="608" r="8" fill="#5BB8F2"></circle>
+<circle cx="286" cy="628" r="7" fill="#8FD14F"></circle>
+<circle cx="208" cy="574" r="6" fill="#E6F4FF"></circle>
+<path d="M0 690 Q 55 674 110 688 T 220 686 T 330 692 T 440 684 V760 H0Z" fill="#0F241D"></path>
+<g>
+<rect x="160" y="664" width="10" height="28" rx="4" fill="#D9CDB4"></rect><path d="M144 668 q 21 -30 42 0 z" fill="#E0664B"></path>
+<rect x="192" y="676" width="7" height="16" rx="3" fill="#D9CDB4"></rect><path d="M182 679 q 13 -20 27 0 z" fill="#E0664B"></path>
+<rect x="378" y="668" width="9" height="22" rx="4" fill="#D9CDB4"></rect><path d="M364 671 q 18 -26 37 0 z" fill="#C25BB0"></path>
+<g fill="#FCE9D9"><circle cx="158" cy="660" r="3"></circle><circle cx="172" cy="656" r="2.5"></circle><circle cx="376" cy="664" r="2.5"></circle></g>
+</g>
+<g fill="#1E4A33"><path d="M240 692 l6 -24 l6 24z"></path><path d="M260 692 l5 -16 l5 16z"></path><path d="M320 690 l5 -20 l5 20z"></path></g>
+<g fill="#E8F59A"><circle cx="300" cy="540" r="3"></circle><circle cx="200" cy="520" r="2.5"></circle><circle cx="400" cy="600" r="2"></circle><circle cx="150" cy="460" r="2.5"></circle><circle cx="270" cy="660" r="2"></circle></g>
 </svg>
