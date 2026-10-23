@@ -1,4 +1,8 @@
-# KameoRecomp
+<p align="center">
+  <img src="res/icon.svg" width="200" alt="KameoRecomp icon">
+</p>
+
+<h1 align="center">KameoRecomp</h1>
 
 <p align="center">
   <a href="https://github.com/ElGuslml/KameoRecomp/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ElGuslml/KameoRecomp?style=for-the-badge&label=Latest%20release&color=86a8ff"></a>
