@@ -107,7 +107,8 @@ options you saved.
 - **Settings → Video:** monitor, display (fullscreen, borderless or window), window size, image format (fill a
   wide screen, or 16:9 with bars) and internal resolution (NativeXRenderer's, or the Xenos path's scale).
 - **Settings → Graphics:** renderer (NativeXRenderer or Xenos), frame rate (30 or 60 FPS), antialiasing, anisotropic
-  filtering, and the graphics API with Xenos.
+  filtering, shadow quality with NativeXRenderer (Original, High or Ultra: the shadow maps at the internal resolution,
+  or at least twice or four times the game's), and the graphics API with Xenos.
 - **Settings → Game:** the game's language (text and voices; Spanish of Spain or of Latin America) and the
   cinematics without black bars.
 - **Controls → Keyboard:** playing with keyboard and mouse, a primary and a secondary key for each control of

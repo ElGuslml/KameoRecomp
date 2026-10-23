@@ -66,6 +66,7 @@ void ResetGraphics(Options& o) {
   o.native_aa = defaults.native_aa;
   o.native_aa_experimental = defaults.native_aa_experimental;
   o.anisotropic = defaults.anisotropic;
+  o.shadow_quality = defaults.shadow_quality;
 }
 
 void ResetGame(Options& o) {
@@ -276,6 +277,10 @@ Options OptionsFromConfig(const Config& c, unsigned primary_dpi) {
     o.toggles[i] = GetBool(c, game::kToggles[i].cvar, game::kToggles[i].default_value);
   }
   o.native = game::kHasNativeXRenderer && GetBool(c, "native_x_renderer", true);  // the default (D56)
+  if (game::kShadowQuality) {
+    double shadow_scale = std::strtod(GetString(c, "native_x_renderer_shadow_scale").c_str(), nullptr);
+    o.shadow_quality = shadow_scale >= 4.0 ? 2 : shadow_scale >= 2.0 ? 1 : 0;
+  }
   o.native_fill = GetBool(c, "native_x_renderer_fill_screen", true);
   double native_scale = std::strtod(GetString(c, "native_x_renderer_resolution_scale").c_str(), nullptr);
   o.native_height = native_scale > 0.0 ? int(std::lround(native_scale * kGuestHeight)) : 0;
@@ -662,6 +667,11 @@ bool SaveOptions(const Settings& s) {
                             : o.native_aa_experimental >= 0   ? kExperimentalAntialiasing[o.native_aa_experimental].name
                                                               : kNativeAntialiasingNames[0];
     f << "native_x_renderer_antialiasing = \"" << native_aa << "\"\n";
+    // The shadow maps' resolution (D92): 0 = the internal resolution's, as everything else; 2 or 4 = at least twice
+    // or four times the game's.
+    if (game::kShadowQuality) {
+      f << "native_x_renderer_shadow_scale = " << (o.shadow_quality == 2 ? 4 : o.shadow_quality == 1 ? 2 : 0) << "\n";
+    }
   }
   // The keyboard and the mouse as the player's controller (the SDK's mnk driver): its keys are lists of
   // alternatives ("Q,I"), each optionally with Shift+, Ctrl+ or Alt+.

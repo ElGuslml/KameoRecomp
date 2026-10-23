@@ -34,7 +34,6 @@ struct Texts {
   const char* autosave;
   const char* reset_values;
   const char* reset_defaults;
-  const char* coming_soon;  // a badge, upper case
   const char* settings;     // the kicker of the Settings pages
   const char* controls;     // the kicker of the Controls pages
 
@@ -96,6 +95,7 @@ struct Texts {
   const char* off;
   const char* shadows;
   const char* shadows_hint;
+  const char* shadows_hint_xenos;
   const char* shadows_high;
   const char* shadows_ultra;
   const char* api_hint;

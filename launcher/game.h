@@ -70,6 +70,12 @@ inline constexpr const char* kReleasesPage = "";
 // resolution, antialiasing and image format.
 inline constexpr bool kHasNativeXRenderer = true;
 
+// The Graphics page's shadow quality row: NativeXRenderer draws the game's shadow maps at a scale of their own
+// (native_x_renderer_shadow_scale, its D92): at least twice or four times the game's resolution. Only where it
+// finds them: the depth passes with no color target that are not of the game's output size.
+// Its shadow maps: 768x768 and 1024x1024 depth maps, drawn with no color target.
+inline constexpr bool kShadowQuality = kHasNativeXRenderer && true;
+
 // The Graphics page's frame rate row: kFrameRateCvar's choices, each a value of the cvar and the frame rate it
 // gives, and the value without the key: src/framerate.cpp's 60 FPS, off by default.
 struct FrameRate {

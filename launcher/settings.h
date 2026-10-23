@@ -100,6 +100,9 @@ struct Options {
   bool native_fill = true;  // native_x_renderer_fill_screen: fill an output that is not 16:9, or 16:9 with bars
   int native_height = 0;    // native_x_renderer_resolution_scale × the frame's height: the internal resolution's
                             // height; 0 = automatic
+  // native_x_renderer_shadow_scale (NativeXRenderer's D92): 0 = the shadow maps like everything else, 1 = at least
+  // twice the game's resolution (2), 2 = at least four times (4).
+  int shadow_quality = 0;
   // The game's own options (game.h): its language (an index of game::kLanguages: user_language and its variant
   // cvar) and its switches. game::kUltrawideCvar follows native_fill (the image format).
   int language = 0;

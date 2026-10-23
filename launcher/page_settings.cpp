@@ -1,5 +1,5 @@
 // The Settings pages: Video (monitor, display mode, resolution, image format, internal resolution) and
-// Graphics (the renderer, frame rate, antialiasing, anisotropic filtering, shadows and, with Xenos, the
+// Graphics (the renderer, frame rate, antialiasing, anisotropic filtering, shadow quality and, with Xenos, the
 // graphics API). Every change is saved at once.
 
 #include <algorithm>
@@ -288,22 +288,24 @@ void App::GraphicsPage(const ImRect& rect) {
     constexpr int kValues[] = {0, 2, 3, 4, 5};
     std::vector<std::string> items = {t_.off, "2×", "4×", "8×", "16×"};
     int selected = int(std::find(std::begin(kValues), std::end(kValues), o.anisotropic) - std::begin(kValues));
-    y += Row(ImVec2(content.Min.x, y), width, 16, t_.anisotropic, t_.anisotropic_hint, 48, false, &at);
+    y += Row(ImVec2(content.Min.x, y), width, 16, t_.anisotropic, t_.anisotropic_hint, 48,
+             o.native && !game::kShadowQuality, &at);
     if (Segmented("anisotropic", at, kGraphicsSegments, items, &selected)) {
       o.anisotropic = kValues[selected];
       changed = true;
     }
   }
-  if (game::kHasNativeXRenderer) {
-    // Not a setting yet (Gustavo, 2026-10-22: shown, disabled, "coming soon").
+  if (game::kShadowQuality) {
+    // The shadow maps' resolution, NativeXRenderer's (its D92): the game's scaled like everything else, or at least
+    // twice or four times the game's. Shown with Xenos, disabled.
     std::vector<std::string> items = {"Original", t_.shadows_high, t_.shadows_ultra};
-    int selected = 0;
-    y += Row(ImVec2(content.Min.x, y), width, 16, t_.shadows, t_.shadows_hint, 48, o.native, &at);
-    Segmented("shadows", at, kGraphicsSegments, items, &selected, false);
-    ImVec2 size = SegmentedSize(kGraphicsSegments, items);
-    ImVec2 badge = BadgeSize(t_.coming_soon);
-    Badge(ImVec2(at.x + size.x + Px(12.0f), at.y + (size.y - badge.y) * 0.5f), t_.coming_soon, col::kGlyph,
-          col::kTextSoft);
+    int selected = o.native ? o.shadow_quality : 0;
+    y += Row(ImVec2(content.Min.x, y), width, 16, t_.shadows, o.native ? t_.shadows_hint : t_.shadows_hint_xenos, 48,
+             o.native, &at);
+    if (Segmented("shadows", at, kGraphicsSegments, items, &selected, o.native)) {
+      o.shadow_quality = selected;
+      changed = true;
+    }
   }
   if (!o.native) {
     // Xenos draws through the SDK's Direct3D 12 or Vulkan backend.
