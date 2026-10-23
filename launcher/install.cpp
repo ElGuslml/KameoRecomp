@@ -8,6 +8,7 @@
 #include <windows.h>
 
 #include <algorithm>
+#include <cwctype>
 #include <memory>
 #include <vector>
 
@@ -15,6 +16,22 @@
 
 namespace launcher {
 namespace {
+
+// Whether `folder` is inside the repository the build was made from (the parent of its assets\ folder): a
+// development build run from out\build\. A copy anywhere else (a release package, an installation) is not, even
+// on the machine that built it.
+bool InsideRepository(const std::filesystem::path& folder, const std::filesystem::path& repository_assets) {
+  std::error_code ec;
+  auto normal = [&ec](const std::filesystem::path& p) {
+    std::wstring s = std::filesystem::weakly_canonical(p, ec).generic_wstring();
+    std::transform(s.begin(), s.end(), s.begin(), [](wchar_t c) { return wchar_t(std::towlower(c)); });
+    if (!s.empty() && s.back() != L'/') s += L'/';
+    return s;
+  };
+  std::wstring root = normal(repository_assets.parent_path());
+  std::wstring inside = normal(folder);
+  return root.size() > 1 && inside.compare(0, root.size(), root) == 0;
+}
 
 std::string Utf8(const std::wstring& text) {
   if (text.empty()) return {};
@@ -51,8 +68,12 @@ bool GameInstalled(const std::filesystem::path& exe_dir) {
   std::error_code ec;
   if (std::filesystem::exists(exe_dir / "assets" / game::kDiscExecutable, ec)) return true;
 #ifdef LAUNCHER_DEFAULT_GAME_ROOT
-  // A development build: the game falls back to the repository's assets\ (src/startup.cpp, DefaultGameRoot).
-  if (std::filesystem::exists(std::filesystem::path(LAUNCHER_DEFAULT_GAME_ROOT) / game::kDiscExecutable, ec)) return true;
+  // A development build run from the repository: the game falls back to the repository's assets\ (src/startup.cpp,
+  // DefaultGameRoot). A package or an installation asks for the ISO, even on the machine that built it.
+  std::filesystem::path repository(LAUNCHER_DEFAULT_GAME_ROOT);
+  if (InsideRepository(exe_dir, repository) && std::filesystem::exists(repository / game::kDiscExecutable, ec)) {
+    return true;
+  }
 #endif
   return std::wstring(GetCommandLineW()).find(L"--game_data_root") != std::wstring::npos;
 }
