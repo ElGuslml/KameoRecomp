@@ -1,8 +1,8 @@
-# 60 FPS option
+# 60 FPS option (and above)
 
-**Status: working, being tested (2026-10-12).** 60 FPS measured in gameplay and in a cinematic; the game
-speed is unchanged (same route with the same timed inputs, cinematic at the same pace). Only the first part
-of Thorn's Castle has been seen at 60 FPS so far.
+**Status: working (2026-10-12; 120 FPS since 2026-10-23).** 60 FPS measured in gameplay and in a cinematic; the
+game speed is unchanged (same route with the same timed inputs, cinematic at the same pace). 120 FPS (the vblank at
+120 Hz) tested by Gustavo in Thorn's Castle: Chilla's climb and Major Ruin at their 60 Hz speed.
 
 ## Symptom
 
@@ -24,9 +24,14 @@ frame time, so the movement per second halves at 60 FPS: the camera lags behind 
 Other code steps by a fixed amount every frame, sized for 30 FPS, so it runs twice as fast at 60. Found so far:
 Kameo's blue bar, drained by an elemental's ability (Pummel Weed's RT + LT), lasted 12 s at 30 FPS and 6 s at 60.
 
+Above 60 FPS the emulated vblank runs faster (`video_mode_refresh_rate`, for example 120), and the game reads that
+rate from the video mode at startup. Its clock counts the frame time in vblanks (frame time × refresh rate), and
+animations, Chilla's climb and many timers advance by that count, so at 120 Hz they ran twice as fast, at 120 or at
+60 FPS alike.
+
 ## Fix
 
-`src/framerate.cpp` with three `[[midasm_hook]]`s in `kameo_functions.toml`, all active only with
+`src/framerate.cpp` with four `[[midasm_hook]]`s in `kameo_functions.toml`, the first three active only with
 `kameo_60fps`:
 
 - In the Direct3D swap routine, right after the present interval is read, 2 becomes 1. This is what
@@ -36,12 +41,20 @@ Kameo's blue bar, drained by an elemental's ability (Pummel Weed's RT + LT), las
   `0x82440FB8`). At exactly 30 FPS both are the original values; Y (height) is unchanged, as in the patch.
 - In the ability that drains the blue bar (`sub_823A0990`, every frame), the cost per frame (3) is multiplied by
   the frame time × 30, so the bar drains at its 30 FPS speed (90 per second) at any frame rate.
+- In the engine's video setup (`sub_820BECA8`), a refresh rate above 60 Hz is reported to the game as 60 Hz, the
+  console's, so the clock counts 60 Hz vblanks at any vblank rate.
+
+## 120 FPS
+
+No launcher row yet: start the game with `--video_mode_refresh_rate=120` (with **Frame rate: 60 FPS** in the
+launcher). The display should run at 120 Hz or more.
 
 ## Turning it off
 
 Choose **Frame rate: 30 FPS** in Kameo Launcher (it writes `kameo_60fps = false` to `kameo_options.toml`)
 or start the game with `--kameo_60fps=false`. To see the camera without its fix at 60 FPS:
-`--kameo_camera_fix=false`; the per-frame steps without their fix: `--kameo_frame_step_fix=false`.
+`--kameo_camera_fix=false`; the per-frame steps without their fix: `--kameo_frame_step_fix=false`; the
+SDK's refresh rate given to the game as it is: `--kameo_refresh_rate_fix=false`.
 
 ## What to watch for
 
@@ -54,3 +67,5 @@ to 30 FPS in the launcher.
 | `kameo_60fps` | `false` | `true` presents every vblank (60 FPS); `false` keeps the original 30 FPS |
 | `kameo_camera_fix` | `true` | With `kameo_60fps`: camera following at its 30 FPS speed; `false` = original code |
 | `kameo_frame_step_fix` | `true` | With `kameo_60fps`: code stepped per frame (the blue bar) at its 30 FPS speed; `false` = original code |
+| `kameo_refresh_rate_fix` | `true` | With the vblank above 60 Hz: the game is told 60 Hz; `false` = the SDK's rate (animations and timers too fast) |
+| `video_mode_refresh_rate` | `60` | The emulated vblank (SDK); `120` with `kameo_60fps` gives 120 FPS |

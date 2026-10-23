@@ -81,6 +81,14 @@ address = 0x82440FA4   # fmadds f5,f8,f0,f13 (first of the three that write the 
 name = "KameoCameraFollowHook"
 registers = ["f8", "f6", "f31"]
 
+# Above 60 Hz (src/framerate.cpp): sub_820BECA8 stores XGetVideoMode's refresh rate at 0x827556C0 (its inverse at
+# 0x827556C4, the whole number at 0x8275D254), and the engine counts its frames as dt * refresh rate (0x82759F7C, 408
+# loads); the hook reports 60 Hz to the game when the SDK's vblank runs faster.
+[[midasm_hook]]
+address = 0x820BEDAC   # stb r11,28(r31) (after lfs f1,100(r1): the video mode's refresh rate)
+name = "KameoRefreshRateHook"
+registers = ["f1"]
+
 # Kameo's blue bar at 60 FPS (src/framerate.cpp): sub_823A0990, run every frame while an elemental's ability drains
 # the bar (Pummel Weed's RT + LT), takes 3 (the float at 0x8273CF68) from it per frame and sets it through the stat
 # setter sub_8217EBA8; the hook scales the cost by the frame's duration in 30 Hz frames when kameo_60fps is on.

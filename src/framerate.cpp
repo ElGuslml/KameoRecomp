@@ -21,9 +21,15 @@
 // and 6 s at 60 (Gustavo). Its hook scales the per-frame step by the frame's duration in 30 Hz
 // frames, dt * 30, so it keeps the console's speed at any frame rate.
 //
-// The hooks are in kameo_functions.toml and do nothing unless kameo_60fps is on; the camera one can
-// be turned off on its own with kameo_camera_fix = false, the per-frame steps with
-// kameo_frame_step_fix = false (to compare).
+// Above 60 FPS the SDK's vblank runs faster (video_mode_refresh_rate, e.g. 120), and the game reads
+// that rate from XGetVideoMode: sub_820BECA8 stores it at 0x827556C0, and the clock counts the
+// frame time in vblanks, dt * refresh rate (0x82759F7C, read in 408 places: animations, the climb,
+// timers), so at 120 Hz they ran twice as fast whatever the frame rate (Gustavo). The game is told
+// 60 Hz: dt * 60, the console's unit, at any vblank rate.
+//
+// The hooks are in kameo_functions.toml; the 60 FPS ones do nothing unless kameo_60fps is on. The
+// camera one can be turned off on its own with kameo_camera_fix = false, the per-frame steps with
+// kameo_frame_step_fix = false, the refresh rate with kameo_refresh_rate_fix = false (to compare).
 
 #include <rex/cvar.h>
 #include <rex/logging.h>
@@ -47,6 +53,10 @@ REXCVAR_DEFINE_BOOL(kameo_frame_step_fix, true, "Kameo",
                     "With kameo_60fps: the game code that steps by a fixed amount per frame (made for 30 FPS) "
                     "keeps the speed it has at 30 FPS: Kameo's blue bar drains as on the console. false = the "
                     "original code, twice as fast at 60 FPS");
+REXCVAR_DEFINE_BOOL(kameo_refresh_rate_fix, true, "Kameo",
+                    "With the vblank above 60 Hz (video_mode_refresh_rate): the game is told 60 Hz, the "
+                    "rate its timing counts in, so animations and timers keep their speed. false = the "
+                    "SDK's rate, which makes them faster");
 
 namespace {
 
@@ -103,4 +113,15 @@ void KameoElementalDrainHook(PPCRegister& f0, PPCRegister& f1, PPCRegister& f29)
     return;
   }
   f1.f64 = double(float(f0.f64 - f29.f64 * Frames30()));
+}
+
+// [[midasm_hook]] 0x820BEDAC (sub_820BECA8, the engine's video setup): after "lfs f1,100(r1)", f1 =
+// XGetVideoMode's refresh rate, which the code below stores at 0x827556C0, its inverse at
+// 0x827556C4 (the clock's limit is 6 of those) and its whole number at 0x8275D254.
+void KameoRefreshRateHook(PPCRegister& f1) {
+  if (!REXCVAR_GET(kameo_refresh_rate_fix) || !(f1.f64 > 60.0)) {
+    return;
+  }
+  REXLOG_INFO("[framerate] the game is told 60 Hz instead of {} Hz (kameo_refresh_rate_fix)", f1.f64);
+  f1.f64 = 60.0;
 }
