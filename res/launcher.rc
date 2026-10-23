@@ -1,10 +1,21 @@
-// Resources of Kameo Launcher.exe: icon (res/icon.ico, when present) and file properties.
+// Resources of "Kameo Launcher.exe": icon (res/icon.ico, when present), file properties, and the launcher's fonts and
+// art (launcher/resources.h).
 #include <winver.h>
 #include "version.h"
+#include "../launcher/resources.h"
 
 #ifdef KAMEORECOMP_HAS_ICON
 1 ICON "icon.ico"
 #endif
+
+IDR_FONT_REGULAR RCDATA "../launcher/fonts/Barlow-Regular.ttf"
+IDR_FONT_MEDIUM RCDATA "../launcher/fonts/Barlow-Medium.ttf"
+IDR_FONT_SEMIBOLD RCDATA "../launcher/fonts/Barlow-SemiBold.ttf"
+IDR_FONT_BOLD RCDATA "../launcher/fonts/Barlow-Bold.ttf"
+IDR_FONT_CONDENSED_SEMIBOLD RCDATA "../launcher/fonts/BarlowCondensed-SemiBold.ttf"
+IDR_FONT_CONDENSED_BOLD RCDATA "../launcher/fonts/BarlowCondensed-Bold.ttf"
+IDR_ART_HERO RCDATA "../launcher/art/hero.svg"
+IDR_ART_INSTALL RCDATA "../launcher/art/install.svg"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION KAMEORECOMP_VERSION

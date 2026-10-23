@@ -106,13 +106,52 @@ target_include_directories(kameo PRIVATE "${REXSDK_DIR}/thirdparty/imgui")
 target_compile_definitions(kameo PRIVATE
     KAMEO_DEFAULT_GAME_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/assets")
 
-# Kameo Launcher: game options in a separate executable (Win32, no SDK) so that KameoEOPRecomp.exe
-# starts right away. It writes kameo_options.toml next to KameoEOPRecomp.exe and starts it on "Play".
+# Kameo Launcher: the options, the first run from the player's ISO, the achievements and the updates, in a separate
+# executable so that KameoEOPRecomp.exe starts right away (for example from Steam Big Picture); "Play" starts the game, and
+# the launcher comes back when it closes. It writes kameo_options.toml next to KameoEOPRecomp.exe. The launcher is
+# POTCAWERecomp's, shared through recomp-tools' template: the game's own names, files and options are
+# launcher/game.h (with src/project.h, which the game shares) and launcher/game.cpp, its art launcher/art/. SDL3
+# and Dear ImGui from the SDK tree, linked statically (one executable, without the SDK's DLLs), drawn with
+# Direct3D 11 (the SDK builds SDL3 without SDL_render); nanosvg draws its icons and art.
 if(WIN32)
-    add_executable(kameo_launcher WIN32 launcher/kameo_launcher.cpp)
+    add_executable(kameo_launcher WIN32
+        launcher/main.cpp
+        launcher/app.cpp
+        launcher/game.cpp
+        launcher/settings.cpp
+        launcher/texts.cpp
+        launcher/page_play.cpp
+        launcher/page_settings.cpp
+        launcher/page_game.cpp
+        launcher/page_keyboard.cpp
+        launcher/page_gamepad.cpp
+        launcher/page_updates.cpp
+        launcher/page_achievements.cpp
+        launcher/page_install.cpp
+        launcher/iso.cpp
+        launcher/install.cpp
+        launcher/achievements.cpp
+        launcher/net.cpp
+        launcher/updater.cpp
+        launcher/zip.cpp
+        launcher/ui/gfx.cpp
+        launcher/ui/ui.cpp
+        "${REXSDK_DIR}/thirdparty/imgui/backends/imgui_impl_sdl3.cpp"
+        "${REXSDK_DIR}/thirdparty/imgui/backends/imgui_impl_dx11.cpp")
     set_target_properties(kameo_launcher PROPERTIES OUTPUT_NAME "Kameo Launcher")
-    target_compile_definitions(kameo_launcher PRIVATE UNICODE _UNICODE NOMINMAX)
-    target_link_libraries(kameo_launcher PRIVATE comctl32 shcore)
+    target_compile_definitions(kameo_launcher PRIVATE UNICODE _UNICODE NOMINMAX IMGUI_DEFINE_MATH_OPERATORS)
+    target_include_directories(kameo_launcher PRIVATE launcher src res launcher/thirdparty/nanosvg
+        "${REXSDK_DIR}/thirdparty/imgui/backends" "${REXSDK_DIR}/thirdparty/tomlplusplus"
+        "${REXSDK_DIR}/thirdparty/inja/third_party/include" "${REXSDK_DIR}/thirdparty/stb")
+    target_link_libraries(kameo_launcher PRIVATE imgui SDL3::SDL3 d3d11 dxgi d3dcompiler shcore windowscodecs ole32
+        winhttp bcrypt)
+    # A development build's game files, as the game falls back to them: the launcher then skips the first run.
+    target_compile_definitions(kameo_launcher PRIVATE
+        LAUNCHER_DEFAULT_GAME_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/assets")
+    # The embedded fonts and art (res/launcher.rc): a change rebuilds the resources.
+    file(GLOB KAMEO_LAUNCHER_RESOURCES CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/launcher/fonts/*.ttf" "${CMAKE_CURRENT_SOURCE_DIR}/launcher/art/*.svg")
+    set_source_files_properties(res/launcher.rc PROPERTIES OBJECT_DEPENDS "${KAMEO_LAUNCHER_RESOURCES}")
 endif()
 
 # Windows resources: file properties (res/version.h) and the icon, res/icon.ico, when it exists. The

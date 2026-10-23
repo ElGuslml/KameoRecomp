@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 760">
+<!-- The first-run screens' side art: the template's placeholder, an abstract disc. Replace it with the game's own
+     (drawn with preserveAspectRatio "xMidYMax slice"; installer\make_images.ps1 renders the installer's from it). -->
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#18263D"/>
+    <stop offset="1" stop-color="#0E1726"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="0.62" cy="0.46" r="0.6">
+    <stop offset="0" stop-color="#2B4266" stop-opacity="0.9"/>
+    <stop offset="1" stop-color="#2B4266" stop-opacity="0"/>
+  </radialGradient>
+</defs>
+<rect width="440" height="760" fill="url(#sky)"/>
+<rect width="440" height="760" fill="url(#glow)"/>
+<g fill="none" stroke="#2A3D5E" stroke-width="1.5">
+  <circle cx="270" cy="350" r="170"/>
+  <circle cx="270" cy="350" r="136" stroke-opacity="0.7"/>
+</g>
+<circle cx="270" cy="350" r="150" fill="#1C2D49"/>
+<path d="M270 200 A150 150 0 0 1 411 300 L270 350 Z" fill="#24395B"/>
+<circle cx="270" cy="350" r="52" fill="#142033"/>
+<circle cx="270" cy="350" r="52" fill="none" stroke="#33496D" stroke-width="2"/>
+<circle cx="270" cy="350" r="16" fill="#0E1726"/>
+<g fill="#33445F"><circle cx="40" cy="250" r="1.6"/><circle cx="120" cy="140" r="1.2"/><circle cx="60" cy="560" r="1.6"/><circle cx="390" cy="620" r="1.2"/><circle cx="170" cy="660" r="1.2"/></g>
+</svg>

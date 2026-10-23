@@ -31,10 +31,10 @@ compiled; the Xbox 360 GPU is emulated by ReXGlue's Xenos backend (derived from 
   ([`docs/quit-prompt.md`](docs/quit-prompt.md)).
 - **Game language** chosen in the launcher: English, French, German, Italian, Spanish (Spain or Latin
   America), Japanese, Korean or Traditional Chinese ([`docs/language.md`](docs/language.md)).
-- **Kameo Launcher**: language, monitor, fullscreen / borderless / window, window resolution, renderer,
-  aspect ratio (16:9 / ultrawide), cinematics without black bars, internal resolution, frame rate (30 / 60 FPS), antialiasing, anisotropic
-  filtering (16× by default) and graphics API. Works
-  with mouse, keyboard or controller; "Save" keeps the window open. With Xenos (the emulated GPU)
+- **Kameo Launcher** ([below](#the-launcher)): the first run from your ISO, language, monitor, fullscreen /
+  borderless / window, window resolution, renderer, image format (16:9 / ultrawide), cinematics without black bars,
+  internal resolution, frame rate (30 / 60 FPS), antialiasing, anisotropic filtering (16× by default), graphics API,
+  keyboard and gamepad controls, achievements. Works with mouse, keyboard or controller. With Xenos (the emulated GPU)
   ReXGlue renders the game's 1280×720 frame at a whole multiple per axis (2×, 3×) and fits the image to the
   screen; "Automatic" picks the smallest scale that covers your screen (3840×1440 on a 3440×1440 ultrawide). With
   [NativeXRenderer](docs/native-x-renderer-kameo.md) (the default, Vulkan) the internal resolution is your
@@ -57,9 +57,12 @@ To run:
 
 ## Game files
 
-Extract the content of your disc or ISO with
-[extract-xiso](https://github.com/XboxDev/extract-xiso/releases) and copy all of it into `assets/` so that
-`assets/default.xex` exists. The expected executable has CRC32 `E24BE720`; `KameoEOPRecomp.exe` warns you at
+- **To play:** Kameo Launcher extracts them from the ISO of your disc on its first run (a full Redump image or a
+  trimmed one); it checks that it is this game and this version (the USA disc, `default.xex` with CRC32
+  `E24BE720`). `"Kameo Launcher.exe" --launcher_first_run` installs them again.
+- **To build:** extract the content of your disc or ISO with
+  [extract-xiso](https://github.com/XboxDev/extract-xiso/releases) and copy all of it into `assets/` so that
+  `assets/default.xex` exists. The expected executable has CRC32 `E24BE720`; `KameoEOPRecomp.exe` warns you at
 startup if yours is a different version. See [`assets/README.md`](assets/README.md).
 
 ## Building from source
@@ -91,8 +94,34 @@ cmake --build --preset win-amd64-release
 
 ### Steam Big Picture
 
-Add `KameoEOPRecomp.exe` as a non-Steam game: it starts straight into the game with the options you saved in
-Kameo Launcher. You can also add `Kameo Launcher.exe` to change options from the couch with a controller.
+Add `Kameo Launcher.exe` as a non-Steam game: Steam sees the game running until you quit the launcher, and
+stopping it from Steam closes the game too. `KameoEOPRecomp.exe` still starts straight into the game with the
+options you saved.
+
+## The launcher
+
+**Kameo Launcher** (POTCAWERecomp's launcher, shared through recomp-tools) works with mouse, keyboard or any controller
+(DualSense, DualShock, Xbox, Switch Pro...). Its pages:
+- **Play:** starts the game, with a summary of the current settings. When you quit the game, the launcher comes
+  back.
+- **Settings → Video:** monitor, display (fullscreen, borderless or window), window size, image format (fill a
+  wide screen, or 16:9 with bars) and internal resolution (NativeXRenderer's, or the Xenos path's scale).
+- **Settings → Graphics:** renderer (NativeXRenderer or Xenos), frame rate (30 or 60 FPS), antialiasing, anisotropic
+  filtering, and the graphics API with Xenos.
+- **Settings → Game:** the game's language (text and voices; Spanish of Spain or of Latin America) and the
+  cinematics without black bars.
+- **Controls → Keyboard:** playing with keyboard and mouse, a primary and a secondary key for each control of
+  the Xbox 360 controller, and the mouse for the camera with its sensitivity.
+- **Controls → Gamepad:** which button of each type of controller presses each button of the Xbox 360 controller.
+- **Achievements:** the game's achievements with their icons, which ones you have unlocked and when, and your
+  gamerscore. The game writes their list the first time it runs.
+- **Updates:** the installed version (this build does not look for updates).
+
+The first time, if the game files are missing, it asks for the ISO of your copy of the game, checks it and
+extracts its files into `assets\` next to `KameoEOPRecomp.exe`. Every change is saved at once in `kameo_options.toml`. With a
+controller: LB/RB change the page, A selects, B goes back to the sidebar, Start plays. The launcher starts in
+fullscreen; F11 or Alt+Enter switch it to a window. If the game closes with an error, the launcher says so when it
+comes back, with a link to the logs.
 
 ## Configuration
 

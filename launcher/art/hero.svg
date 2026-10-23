@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480">
+<!-- The Play page's art: the template's placeholder, an abstract disc. Replace it with the game's own (drawn with
+     preserveAspectRatio "xMidYMid slice", cropped around game.h's kHeroFocusX/Y). -->
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#18263D"/>
+    <stop offset="1" stop-color="#101A2B"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="0.74" cy="0.42" r="0.5">
+    <stop offset="0" stop-color="#2B4266" stop-opacity="0.9"/>
+    <stop offset="1" stop-color="#2B4266" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0.45" stop-color="#0E1726" stop-opacity="0"/>
+    <stop offset="1" stop-color="#0E1726" stop-opacity="0.95"/>
+  </linearGradient>
+</defs>
+<rect width="1000" height="480" fill="url(#sky)"/>
+<rect width="1000" height="480" fill="url(#glow)"/>
+<g fill="none" stroke="#2A3D5E" stroke-width="1.5">
+  <circle cx="740" cy="200" r="190"/>
+  <circle cx="740" cy="200" r="150" stroke-opacity="0.7"/>
+  <circle cx="740" cy="200" r="110" stroke-opacity="0.5"/>
+</g>
+<circle cx="740" cy="200" r="170" fill="#1C2D49"/>
+<path d="M740 30 A170 170 0 0 1 900 140 L740 200 Z" fill="#24395B"/>
+<circle cx="740" cy="200" r="58" fill="#142033"/>
+<circle cx="740" cy="200" r="58" fill="none" stroke="#33496D" stroke-width="2"/>
+<circle cx="740" cy="200" r="18" fill="#0E1726"/>
+<g fill="#33445F"><circle cx="90" cy="60" r="1.6"/><circle cx="180" cy="120" r="1.2"/><circle cx="310" cy="50" r="1.6"/><circle cx="420" cy="140" r="1.2"/><circle cx="520" cy="70" r="1.6"/><circle cx="960" cy="420" r="1.2"/><circle cx="40" cy="200" r="1.2"/></g>
+<rect width="1000" height="480" fill="url(#fade)"/>
+</svg>

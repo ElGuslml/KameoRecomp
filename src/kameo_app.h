@@ -6,6 +6,7 @@
 
 #include <rex/rex_app.h>
 
+#include <rex/cvar.h>
 #include <rex/filesystem.h>
 #include <rex/kernel/xam/module.h>
 #include <rex/logging.h>
@@ -64,7 +65,9 @@ class KameoApp : public rex::ReXApp {
     if (!rex::ReXApp::SetupEnvironment()) return false;
     REXLOG_INFO("[startup] User data: {}", user_data_root().string());
     REXLOG_INFO("[startup] {}", native_x_renderer::Describe());
-    if (!kameo::CheckGameFiles(game_data_root())) return false;
+    // Not when the launcher asks for the achievements' list (--achievements_cache_only: no window, a question
+    // would wait unseen).
+    if (!rex::cvar::Query<bool>("achievements_cache_only") && !kameo::CheckGameFiles(game_data_root())) return false;
     kameo::LoadLauncherOptions(exe_dir / "kameo_options.toml", kameo::GpuPluginPath());
     return true;
   }
