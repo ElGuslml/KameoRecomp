@@ -1,5 +1,9 @@
 # KameoRecomp
 
+<p align="center">
+  <a href="https://discord.gg/XQtM5TmNs8"><img alt="Discord: join the server" src="https://img.shields.io/badge/Discord-Join%20the%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+</p>
+
 A static recompilation of **Kameo: Elements of Power** (Xbox 360, 2005) to native Windows, built on the
 [ReXGlue SDK](https://github.com/rexglue/rexglue-sdk). The game's PowerPC code is translated to C++ and
 compiled; the Xbox 360 GPU is emulated by ReXGlue's Xenos backend (derived from [Xenia](https://xenia.jp)).
