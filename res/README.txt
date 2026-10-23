@@ -22,7 +22,7 @@ REQUIREMENTS
 
 INSTALLATION
 
-1. Either run the installer (KameoRecomp-v{VERSION}-setup.exe: it installs for your Windows user, without
+1. Either run the installer (KameoRecomp-{VERSION}-setup.exe: it installs for your Windows user, without
    administrator rights), or extract this zip to any folder, for example C:\Games\KameoRecomp.
 
 2. Run "Kameo Launcher.exe". The first time, it asks for your Xbox 360 ISO, checks that it is the right
