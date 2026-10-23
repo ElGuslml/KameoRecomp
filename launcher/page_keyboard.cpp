@@ -365,7 +365,8 @@ void App::KeyboardPage(const ImRect& rect) {
   Options& o = settings_.o;
   ImRect content = PageContent(rect);
   bool notice = std::chrono::steady_clock::now() < notice_until_;
-  float y = Header(content.Min, t_.controls, t_.nav_keyboard, notice ? nullptr : t_.keyboard_subtitle);
+  float y = Header(content.Min, t_.controls, t_.nav_keyboard, notice ? nullptr : t_.keyboard_subtitle,
+                   t_.experimental_badge);
   if (notice) {
     constexpr Type kNotice{Font::kSemiBold, 14};
     DrawLabel(kNotice, ImVec2(content.Min.x, y + Px(8.0f)), col::kAccentLight, notice_);

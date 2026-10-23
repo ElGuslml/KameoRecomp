@@ -479,7 +479,17 @@ void App::Sidebar(const ImRect& rect) {
       FillRect(item, background, 8.0f);
     }
     if (entry.sub) {
-      DrawLabel(Type{Font::kMedium, 14}, ImVec2(item.Min.x + Px(44.0f), item.Min.y), text, labels[i], height);
+      constexpr Type kSub{Font::kMedium, 14};
+      DrawLabel(kSub, ImVec2(item.Min.x + Px(44.0f), item.Min.y), text, labels[i], height);
+      // The keyboard and mouse are experimental: a badge after its name.
+      if (entry.page == Page::kKeyboard) {
+        ImVec2 size = BadgeSize(t_.experimental_badge, 9);
+        float badge_x = item.Min.x + Px(44.0f) + MeasureText(kSub, labels[i]).x + Px(8.0f);
+        if (badge_x + size.x <= item.Max.x - Px(4.0f)) {
+          Badge(ImVec2(badge_x, item.Min.y + (height - size.y) * 0.5f), t_.experimental_badge, col::kAccentTint,
+                col::kAccentLight, 9);
+        }
+      }
     } else {
       DrawIcon(entry.icon, ImVec2(item.Min.x + Px(12.0f), item.Min.y + (height - Px(20.0f)) * 0.5f), 20.0f, icon,
                1.8f);
@@ -568,7 +578,7 @@ void App::ControllerHints(ImVec2 pos, float width) {
 
 // --- Shared pieces ---
 
-float App::Header(ImVec2 pos, const char* kicker, const char* title, const char* subtitle) {
+float App::Header(ImVec2 pos, const char* kicker, const char* title, const char* subtitle, const char* badge) {
   constexpr Type kKicker{Font::kSemiBold, 13};
   constexpr Type kTitle{Font::kCondensedBold, 40};
   constexpr Type kSubtitle{Font::kRegular, 14};
@@ -578,6 +588,11 @@ float App::Header(ImVec2 pos, const char* kicker, const char* title, const char*
     y += LineHeight(kKicker) + Px(4.0f);
   }
   DrawLabel(kTitle, ImVec2(pos.x, y), col::kText, title, Px(40.0f));
+  if (badge) {
+    ImVec2 size = BadgeSize(badge, 12);
+    Badge(ImVec2(pos.x + MeasureText(kTitle, title).x + Px(14.0f), y + (Px(40.0f) - size.y) * 0.5f), badge,
+          col::kAccentTint, col::kAccentLight, 12);
+  }
   y += Px(40.0f);
   if (subtitle) {
     y += Px(8.0f);

@@ -90,6 +90,7 @@ struct Texts {
   const char* antialiasing_hint_xenos;
   const char* none;
   const char* experimental;
+  const char* experimental_badge;  // upper case: the keyboard page's badge
   const char* anisotropic;
   const char* anisotropic_hint;
   const char* off;

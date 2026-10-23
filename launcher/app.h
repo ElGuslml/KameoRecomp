@@ -103,7 +103,8 @@ class App {
   std::string LastCheckedText() const;
 
   // The pages' shared pieces. Each returns the y below it (pixels).
-  float Header(ImVec2 pos, const char* kicker, const char* title, const char* subtitle);
+  // `badge`: a badge right of the title (the keyboard's "experimental"), or null.
+  float Header(ImVec2 pos, const char* kicker, const char* title, const char* subtitle, const char* badge = nullptr);
   // A settings row in a card: the title and hint on the left, the control at `*control` (its height in
   // dp is `control_height`). Returns the row's height.
   float Row(ImVec2 pos, float width, float padding_y, const char* title, const char* hint, float control_height,

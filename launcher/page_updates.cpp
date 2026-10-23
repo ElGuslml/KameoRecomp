@@ -2,6 +2,7 @@
 // launcher opens, and the release notes (Markdown from GitHub, drawn simply). The updater is updater.h.
 
 #include <algorithm>
+#include <cctype>
 #include <cstdio>
 #include <ctime>
 #include <string>
@@ -19,11 +20,20 @@ using namespace ui;
 namespace {
 
 // Markdown's inline marks taken out: **bold**, *italic*, __bold__, `code`, [text](url) -> text, ![image](url) ->
-// nothing. A single "_" stays (file names have them).
+// nothing, HTML tags (<img ...>, which GitHub's editor inserts for an uploaded picture; <br>, <p>) -> nothing. A single
+// "_" stays (file names have them).
 std::string PlainInline(std::string_view text) {
   std::string out;
   for (size_t i = 0; i < text.size();) {
     char c = text[i];
+    if (c == '<' && i + 1 < text.size() &&
+        (std::isalpha(static_cast<unsigned char>(text[i + 1])) || text[i + 1] == '/' || text[i + 1] == '!')) {
+      size_t close = text.find('>', i);
+      if (close != std::string_view::npos) {
+        i = close + 1;
+        continue;
+      }
+    }
     if (c == '_' && i + 1 < text.size() && text[i + 1] == '_') {
       i += 2;
       continue;
@@ -147,6 +157,8 @@ float App::ReleaseNotes(const std::string& markdown, ImVec2 pos, float width, bo
     size_t indent = 0;
     while (indent < raw.size() && (raw[indent] == ' ' || raw[indent] == '\t')) ++indent;
     std::string_view line = Trim(raw);
+    // A line of HTML tags only (a picture, <p align="center">): nothing to read, a break between paragraphs.
+    if (!line.empty() && line[0] == '<' && Trim(PlainInline(line)).empty()) line = {};
     if (line.empty()) {
       flush();
       item_level = -1;
