@@ -3,6 +3,7 @@
 <p align="center">
   <a href="https://github.com/ElGuslml/KameoRecomp/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ElGuslml/KameoRecomp?style=for-the-badge&label=Latest%20release&color=86a8ff"></a>
   <a href="https://discord.gg/XQtM5TmNs8"><img alt="Discord: join the server" src="https://img.shields.io/badge/Discord-Join%20the%20server-5865F2?style=for-the-badge&logo=discord&logoColor=white"></a>
+  <a href="https://github.com/ElGuslml/ElGusRecomps"><img alt="More games: ElGus Recomps" src="https://img.shields.io/badge/More%20games-ElGus%20Recomps-2f6b45?style=for-the-badge&logo=github"></a>
 </p>
 
 🧚 **Play Kameo: Elements of Power on your PC, natively.** The Xbox 360 classic by Rare (2005), recompiled to run
