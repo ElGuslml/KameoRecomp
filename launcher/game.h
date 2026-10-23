@@ -65,9 +65,9 @@ inline constexpr int kFrameHeight = 720;
 // --- Updates ---
 
 // This project's releases (updater.cpp): GitHub's API for them, newest first, and their page. Empty: the launcher
-// does not look for updates (the repository is private for now), and its Updates page only shows the version.
-inline constexpr const char* kReleasesApi = "";
-inline constexpr const char* kReleasesPage = "";
+// does not look for updates (a private repository), and its Updates page only shows the version.
+inline constexpr const char* kReleasesApi = "https://api.github.com/repos/ElGuslml/KameoRecomp/releases?per_page=20";
+inline constexpr const char* kReleasesPage = "https://github.com/ElGuslml/KameoRecomp/releases";
 
 // --- The game's own options (a cvar each; empty: the game has no such option, and the launcher no row) ---
 

@@ -19,9 +19,8 @@
 #define AppName "Kameo: Elements of Power"
 #define ShortcutName "Kameo - Elements of Power"
 #define LauncherExe "Kameo Launcher.exe"
-; The project's public repository, once there is one ("https://github.com/<user>/KameoRecomp"): the links of the
-; uninstall entry.
-#define RepoUrl ""
+; The project's public repository: the links of the uninstall entry.
+#define RepoUrl "https://github.com/ElGuslml/KameoRecomp"
 
 [Setup]
 ; Never change the AppId: Windows knows the installation by it, and a newer installer finds the older one with it.
