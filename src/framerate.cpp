@@ -53,6 +53,10 @@ REXCVAR_DEFINE_BOOL(kameo_frame_step_fix, true, "Kameo",
                     "With kameo_60fps: the game code that steps by a fixed amount per frame (made for 30 FPS) "
                     "keeps the speed it has at 30 FPS: Kameo's blue bar drains as on the console. false = the "
                     "original code, twice as fast at 60 FPS");
+REXCVAR_DEFINE_INT32(kameo_frame_rate, 0, "Kameo",
+                     "Kameo Launcher's frame rate: 30 (the original), 60, or 120, 144, 160, 165, 240 (the "
+                     "vblank at that rate). Sets kameo_60fps and video_mode_refresh_rate at startup; 0 = "
+                     "those two as they are");
 REXCVAR_DEFINE_BOOL(kameo_refresh_rate_fix, true, "Kameo",
                     "With the vblank above 60 Hz (video_mode_refresh_rate): the game is told 60 Hz, the "
                     "rate its timing counts in, so animations and timers keep their speed. false = the "

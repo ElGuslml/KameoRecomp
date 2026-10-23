@@ -77,15 +77,17 @@ inline constexpr bool kHasNativeXRenderer = true;
 inline constexpr bool kShadowQuality = kHasNativeXRenderer && true;
 
 // The Graphics page's frame rate row: kFrameRateCvar's choices, each a value of the cvar and the frame rate it
-// gives, and the value without the key: src/framerate.cpp's 60 FPS, off by default.
+// gives, and the value without the key: src/framerate.cpp's kameo_frame_rate (src/options.cpp turns it into
+// kameo_60fps and the vblank's rate), 30 by default as on the console. The rates above the monitor's are hidden.
 struct FrameRate {
   int value;
   int fps;
 };
-inline constexpr const char* kFrameRateCvar = "kameo_60fps";
-inline constexpr bool kFrameRateIsBool = true;
-inline constexpr std::array<FrameRate, 2> kFrameRates{{{0, 30}, {1, 60}}};
-inline constexpr int kFrameRateDefault = 0;
+inline constexpr const char* kFrameRateCvar = "kameo_frame_rate";
+inline constexpr bool kFrameRateIsBool = false;
+inline constexpr std::array<FrameRate, 7> kFrameRates{
+    {{30, 30}, {60, 60}, {120, 120}, {144, 144}, {160, 160}, {165, 165}, {240, 240}}};
+inline constexpr int kFrameRateDefault = 30;
 
 // The Xenos path's antialiasing cannot be turned off in this game.
 inline constexpr const char* kNoMsaaCvar = "";

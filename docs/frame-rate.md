@@ -44,15 +44,16 @@ animations, Chilla's climb and many timers advance by that count, so at 120 Hz t
 - In the engine's video setup (`sub_820BECA8`), a refresh rate above 60 Hz is reported to the game as 60 Hz, the
   console's, so the clock counts 60 Hz vblanks at any vblank rate.
 
-## 120 FPS
+## Above 60 FPS
 
-No launcher row yet: start the game with `--video_mode_refresh_rate=120` (with **Frame rate: 60 FPS** in the
-launcher). The display should run at 120 Hz or more.
+Kameo Launcher's **Frame rate** row offers 30, 60, 120, 144, 160, 165 and 240 FPS, up to the monitor's refresh rate
+(the ones above 60 marked experimental). It writes `kameo_frame_rate`, which the game turns into `kameo_60fps` and
+the emulated vblank's rate (`video_mode_refresh_rate`) at startup; from the command line: `--kameo_frame_rate=120`.
 
 ## Turning it off
 
-Choose **Frame rate: 30 FPS** in Kameo Launcher (it writes `kameo_60fps = false` to `kameo_options.toml`)
-or start the game with `--kameo_60fps=false`. To see the camera without its fix at 60 FPS:
+Choose **Frame rate: 30 FPS** in Kameo Launcher (it writes `kameo_frame_rate = 30` to `kameo_options.toml`)
+or start the game with `--kameo_frame_rate=30`. To see the camera without its fix at 60 FPS:
 `--kameo_camera_fix=false`; the per-frame steps without their fix: `--kameo_frame_step_fix=false`; the
 SDK's refresh rate given to the game as it is: `--kameo_refresh_rate_fix=false`.
 
@@ -64,8 +65,12 @@ to 30 FPS in the launcher.
 
 | Option (`kameo_options.toml`, `kameo.toml` or `--name=value`) | Default | Meaning |
 |---|---|---|
+| `kameo_frame_rate` | `0` | 30, 60, 120, 144, 160, 165 or 240: sets the two below at startup; `0` = they decide |
 | `kameo_60fps` | `false` | `true` presents every vblank (60 FPS); `false` keeps the original 30 FPS |
 | `kameo_camera_fix` | `true` | With `kameo_60fps`: camera following at its 30 FPS speed; `false` = original code |
 | `kameo_frame_step_fix` | `true` | With `kameo_60fps`: code stepped per frame (the blue bar) at its 30 FPS speed; `false` = original code |
 | `kameo_refresh_rate_fix` | `true` | With the vblank above 60 Hz: the game is told 60 Hz; `false` = the SDK's rate (animations and timers too fast) |
 | `video_mode_refresh_rate` | `60` | The emulated vblank (SDK); `120` with `kameo_60fps` gives 120 FPS |
+
+An options file from before the row (only `kameo_60fps`) still works; the launcher shows 30 FPS for it until a rate
+is chosen again.
