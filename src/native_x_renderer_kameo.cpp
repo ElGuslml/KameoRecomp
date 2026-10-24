@@ -76,10 +76,12 @@ const native_x_renderer::Profile& NativeXRendererProfile() {
     // The finished scene, before the HUD: the 1280x720 resolve of the bloom composite into 0x82758880, which the
     // last post-processing pass draws onto the screen with the glows before the HUD. Every post-processing pass
     // resolves through the helper library's full-screen pass (return address 0x820DC4B0), called by the
-    // post-processing driver (0x8227AE6C); the first pass (the scene with its fog) matches too, so the
-    // antialiasing runs twice in play. None of the menus' or videos' resolves come from there.
+    // post-processing driver (0x8227AE6C); the first pass (the scene with its fog) matches too, into the same
+    // texture: only that first copy of each frame is antialiased (D94; the bloom composite after it adds no edges,
+    // and SMAA twice cost ~0.45 ms a frame at 3840x2160). None of the menus' or videos' resolves come from there.
     p.scene_resolve_caller = 0x820DC4B0;
     p.scene_resolve_outer_caller = 0x8227AE6C;
+    p.scene_resolve_once = true;
     // The ultrawide hooks (src/widescreen.cpp) widen the 16:9 cameras by AspectFactor() and keep the 2D layer and
     // the videos at 16:9 in the center: NativeXRenderer may fill a wider output (native_x_renderer_fill_screen).
     p.widens_cameras = true;
