@@ -18,6 +18,12 @@ std::filesystem::path DefaultGameRoot();
 // user_data_root / cache_root: the SDK's defaults on entry (rex::PathConfig), updated in place.
 void ConfigureUserData(std::filesystem::path& user_data_root, std::filesystem::path& cache_root);
 
+// The launchers' profile the game runs with (RecompLauncher's profile_store.h): the current one's folder and name
+// as the SDK's profile_root and profile_name (its saves, settings and achievements there), unless --profile_root
+// was given. None while this installation has saves from before the profiles that the launcher has not copied yet:
+// the game then keeps them in user_data_root, as before.
+void ConfigureProfile(const std::filesystem::path& user_data_root);
+
 // Writes config_path (kameo.toml) with the built-in defaults if it does not exist: the settings
 // this game needs must not depend on a file that can go missing.
 void EnsureDefaultConfig(const std::filesystem::path& config_path);

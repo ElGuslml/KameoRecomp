@@ -125,6 +125,8 @@ if(WIN32)
         SDK_DIR "${REXSDK_DIR}"
         INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/src" "${CMAKE_CURRENT_SOURCE_DIR}/res"
         DEFAULT_GAME_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+    # The game reads which of the launchers' profiles it runs with (src/startup.cpp, ConfigureProfile).
+    recomp_launcher_add_profiles(kameo SDK_DIR "${REXSDK_DIR}")
 endif()
 
 # Windows resources: file properties (res/version.h) and the icon, res/icon.ico, when it exists. The

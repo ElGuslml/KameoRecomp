@@ -53,6 +53,7 @@ class KameoApp : public rex::ReXApp {
       paths.game_data_root = kameo::DefaultGameRoot();
     }
     kameo::ConfigureUserData(paths.user_data_root, paths.cache_root);
+    kameo::ConfigureProfile(paths.user_data_root);
   }
 
   // kameo.toml with the built-in defaults if it is missing, then (after the SDK loads it) the game
