@@ -46,4 +46,9 @@ const GameTexts& GameTextsFor(uint32_t language) {
   }
 }
 
+const std::vector<GameControlGroup>& GameControlsFor(uint32_t) {
+  static const std::vector<GameControlGroup> none;
+  return none;
+}
+
 }  // namespace launcher::game

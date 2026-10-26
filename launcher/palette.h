@@ -60,4 +60,12 @@ inline constexpr ImU32 kErrorBadge = Hex(0x3A1E1B);
 inline constexpr ImU32 kDoneTile = Hex(0x1B3326);          // the check of the finished installation
 inline constexpr ImU32 kScrollbarActive = Hex(0x4A5E54);   // a scrollbar's thumb while dragged (not in the mockup)
 
+// The black of the Play page's title bar and of the first run's title card, over the art (game::kHeroTitleBar,
+// game::kInstallTitleCard).
+inline constexpr ImU32 kTitleBar = IM_COL32(10, 10, 12, 240);
+// Every corner's radius is the mockup's times this (ui.cpp): 1, the launcher's own corners.
+inline constexpr float kRoundness = 1.0f;
+// The first run's step markers' corners (before kRoundness): 14, circles.
+inline constexpr float kStepRadius = 14.0f;
+
 }  // namespace ui::col

@@ -60,10 +60,11 @@ to quit).
 
 ## The launcher
 
-`launcher/` is Kameo Launcher: the launcher of POTCAWERecomp (Pirates of the Caribbean: At World's End), shared
-through recomp-tools' template (SDL3 + Dear ImGui). Its code is the same in every game, except Kameo's profile:
+Kameo Launcher is [RecompLauncher](https://github.com/ElGuslml/RecompLauncher) (`recomp_launcher/`, a submodule: the
+launcher of every one of these recompilations, SDL3 + Dear ImGui) with Kameo's profile in `launcher/`:
 `launcher/game.h` (names, the disc, the look, the options), `launcher/game.cpp` (Kameo's own texts),
-`launcher/palette.h` (its colors) and `launcher/art/`. `installer/kameo.iss` is its Inno Setup installer.
+`launcher/palette.h` (its colors) and `launcher/art/`, and its resources in `res/launcher.rc`. `installer/kameo.iss`
+is its Inno Setup installer.
 
 ## How the SDK is modified
 

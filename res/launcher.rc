@@ -1,24 +1,25 @@
-// Resources of "Kameo Launcher.exe": icon (res/icon.ico, when present), file properties, and the launcher's fonts and
-// art (launcher/resources.h).
+// Resources of "Kameo Launcher.exe": icon (res/icon.ico, when present), file properties, and the launcher's fonts
+// (recomp_launcher/fonts) and art (launcher/art), found through the include directories (RecompLauncher.cmake).
 #include <winver.h>
 #include "version.h"
-#include "../launcher/resources.h"
+#include "launcher_version.h"
+#include "resources.h"
 
 #ifdef KAMEORECOMP_HAS_ICON
 1 ICON "icon.ico"
 #endif
 
-IDR_FONT_REGULAR RCDATA "../launcher/fonts/Barlow-Regular.ttf"
-IDR_FONT_MEDIUM RCDATA "../launcher/fonts/Barlow-Medium.ttf"
-IDR_FONT_SEMIBOLD RCDATA "../launcher/fonts/Barlow-SemiBold.ttf"
-IDR_FONT_BOLD RCDATA "../launcher/fonts/Barlow-Bold.ttf"
-IDR_FONT_CONDENSED_SEMIBOLD RCDATA "../launcher/fonts/BarlowCondensed-SemiBold.ttf"
-IDR_FONT_CONDENSED_BOLD RCDATA "../launcher/fonts/BarlowCondensed-Bold.ttf"
-IDR_ART_HERO RCDATA "../launcher/art/hero.svg"
-IDR_ART_INSTALL RCDATA "../launcher/art/install.svg"
+IDR_FONT_REGULAR RCDATA "fonts/Barlow-Regular.ttf"
+IDR_FONT_MEDIUM RCDATA "fonts/Barlow-Medium.ttf"
+IDR_FONT_SEMIBOLD RCDATA "fonts/Barlow-SemiBold.ttf"
+IDR_FONT_BOLD RCDATA "fonts/Barlow-Bold.ttf"
+IDR_FONT_CONDENSED_SEMIBOLD RCDATA "fonts/BarlowCondensed-SemiBold.ttf"
+IDR_FONT_CONDENSED_BOLD RCDATA "fonts/BarlowCondensed-Bold.ttf"
+IDR_ART_HERO RCDATA "art/hero.svg"
+IDR_ART_INSTALL RCDATA "art/install.svg"
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION KAMEORECOMP_VERSION
+FILEVERSION RECOMP_LAUNCHER_VERSION
 PRODUCTVERSION KAMEORECOMP_VERSION
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
@@ -28,7 +29,7 @@ BEGIN
     BLOCK "040904B0"
     BEGIN
       VALUE "FileDescription", "Kameo Launcher - options for KameoRecomp"
-      VALUE "FileVersion", KAMEORECOMP_VERSION_STR
+      VALUE "FileVersion", RECOMP_LAUNCHER_VERSION_STR
       VALUE "ProductName", "KameoRecomp"
       VALUE "ProductVersion", KAMEORECOMP_VERSION_STR
       VALUE "OriginalFilename", "Kameo Launcher.exe"

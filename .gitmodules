@@ -6,3 +6,6 @@
 [submodule "native_x_renderer"]
 	path = native_x_renderer
 	url = https://github.com/ElGuslml/NativeXRenderer.git
+[submodule "recomp_launcher"]
+	path = recomp_launcher
+	url = https://github.com/ElGuslml/RecompLauncher.git

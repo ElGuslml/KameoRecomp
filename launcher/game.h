@@ -1,13 +1,15 @@
-// This game's profile: everything the launcher knows about the game it belongs to. The rest of launcher\ is the same
-// for every game (recomp-tools' template copies it); game.h, game.cpp (the game's own texts) and palette.h (its
-// colors) are each game's, with the art (launcher\art), the icon (res\icon.ico) and the version
-// (res\version.h).
+// This game's profile: everything the launcher knows about the game it belongs to. The launcher's code is the same
+// for every game (the RecompLauncher submodule, recomp_launcher\, with game_types.h for the types below); game.h,
+// game.cpp (the game's own texts) and palette.h (its colors) are each game's, with the art (launcher\art), the icon
+// (res\icon.ico), the resource script (res\launcher.rc) and the version (res\version.h).
 
 #pragma once
 
 #include <array>
 #include <cstdint>
+#include <vector>
 
+#include "game_types.h"
 #include "version.h"
 
 namespace launcher::game {
@@ -45,6 +47,15 @@ inline constexpr bool kBrandRound = true;
 // The first run's art panel: the game's name in a dark card over the art, with the tagline, instead of straight on
 // the art with the tagline at its foot.
 inline constexpr bool kInstallTitleCard = true;
+// The sidebar's name beside the logo, and the words before "LAUNCHER" under it; null: the art's title (kArtTitle) and
+// "LAUNCHER" alone.
+inline constexpr const char* kSidebarTitle = nullptr;
+inline constexpr const char* kSidebarSubtitle = nullptr;
+// The Play page's name and buttons in a black bar across the foot of the art, under a line of accent (the first run's
+// title card gets the same line), instead of straight on the art.
+inline constexpr bool kHeroTitleBar = false;
+// The titles in capitals: the pages', the Play page's name, the sidebar's and the first run's.
+inline constexpr bool kUppercaseTitles = false;
 
 // --- The disc ---
 
@@ -74,6 +85,8 @@ inline constexpr const char* kReleasesPage = "https://github.com/ElGuslml/KameoR
 // NativeXRenderer draws this game (src/native_x_renderer_kameo.cpp): the Graphics page's renderer cards, its internal
 // resolution, antialiasing and image format.
 inline constexpr bool kHasNativeXRenderer = true;
+// The renderer chosen until the player picks one (an options file without native_x_renderer): NativeXRenderer.
+inline constexpr bool kNativeXRendererDefault = true;
 
 // The Graphics page's shadow quality row: NativeXRenderer draws the game's shadow maps at a scale of their own
 // (native_x_renderer_shadow_scale, its D92): at least twice or four times the game's resolution. Only where it
@@ -84,10 +97,6 @@ inline constexpr bool kShadowQuality = kHasNativeXRenderer && true;
 // The Graphics page's frame rate row: kFrameRateCvar's choices, each a value of the cvar and the frame rate it
 // gives, and the value without the key: src/framerate.cpp's kameo_frame_rate (src/options.cpp turns it into
 // kameo_60fps and the vblank's rate), 30 by default as on the console. The rates above the monitor's are hidden.
-struct FrameRate {
-  int value;
-  int fps;
-};
 inline constexpr const char* kFrameRateCvar = "kameo_frame_rate";
 inline constexpr bool kFrameRateIsBool = false;
 inline constexpr std::array<FrameRate, 7> kFrameRates{
@@ -105,12 +114,6 @@ inline constexpr const char* kUltrawideCvar = "kameo_ultrawide";
 // The languages the game files have (one folder each), each in its own words; Spanish twice: Spain's (spanish\) and
 // Latin America's (mexican\, kameo_latin_american_spanish, src/language.cpp), which Windows' regional format picks
 // between until one is chosen. Korean and Traditional Chinese have text but no voices on the disc.
-struct Language {
-  uint32_t id;
-  const char* name;
-  const char* variant_cvar;  // null: none
-  const char* locales;       // null: any locale of the language
-};
 inline constexpr std::array<Language, 9> kLanguages{{
     {3, "Deutsch", nullptr, nullptr},
     {1, "English", nullptr, nullptr},
@@ -126,14 +129,29 @@ inline constexpr std::array<Language, 9> kLanguages{{
 // Switches of the game's own (src/), each a boolean cvar with a row in the Game page; their titles and hints are
 // game.cpp's (GameTexts::toggles, in this order): the in-engine cinematics without their black bars
 // (src/cinematics.cpp).
-struct Toggle {
-  const char* cvar;
-  bool default_value;
-};
 inline constexpr std::array<Toggle, 1> kToggles{{{"kameo_no_letterbox", false}}};
 
 // The Settings group has a Game page (page_game.cpp) when the game has a language row or switches.
 inline constexpr bool kHasGamePage = !kLanguages.empty() || !kToggles.empty();
+
+// --- Downloadable content ---
+
+// The DLC page (page_dlc.cpp, dlc.h): Xbox 360 content packages, each installed by the game's --install_content tool
+// mode (SDK change 44) into its user data's content folder. Off until checked with this game's content.
+inline constexpr bool kHasDlcPage = false;
+
+// --- The keyboard ---
+
+// The Keyboard page's defaults where they are not the SDK's (game_types.h's KeyDefault); empty: the SDK's.
+inline constexpr std::array<KeyDefault, 0> kKeyboardDefaults{};
+// The Keyboard page's switch that makes some keys also tap a control (the SDK's mnk_tap_target); "": no switch.
+inline constexpr const char* kKeyboardTapTarget = "";
+
+// --- The controls in the game's words ---
+
+// The game's functions (game_types.h's GameControl) in groups, in the launcher's language (game.cpp); empty: the pages
+// show the Xbox 360 controls (texts.cpp).
+const std::vector<GameControlGroup>& GameControlsFor(uint32_t language);
 
 // --- Texts of the game's own (game.cpp) ---
 
@@ -146,6 +164,20 @@ struct GameTexts {
   // The first run's last screen (the game installed), in the game's spirit; null: the launcher's own.
   const char* done_title = nullptr;
   const char* done_text = nullptr;
+  // The DLC page: where the game shows what was installed; null: nothing said.
+  const char* dlc_where = nullptr;
+  // The first run's extraction screen (while it runs), in the game's spirit; null: the launcher's own.
+  const char* extracting_title = nullptr;
+  const char* extracting_text = nullptr;
+  // The Gamepad page's name in the sidebar, its title and subtitle; null: the launcher's own ("Gamepad").
+  const char* gamepad_nav = nullptr;
+  const char* gamepad_title = nullptr;
+  const char* gamepad_subtitle = nullptr;
+  // The Keyboard and Gamepad pages' first column with GameControlsFor's functions; null: the launcher's own.
+  const char* functions_column = nullptr;
+  // The Keyboard page's switch for kKeyboardTapTarget.
+  const char* keyboard_tap_title = nullptr;
+  const char* keyboard_tap_hint = nullptr;
 };
 // In the language of the launcher's texts (an XLanguage); missing ones fall back to English.
 const GameTexts& GameTextsFor(uint32_t language);

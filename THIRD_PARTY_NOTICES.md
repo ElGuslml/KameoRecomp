@@ -16,15 +16,16 @@ NVIDIA and DLSS are trademarks or registered trademarks of NVIDIA Corporation in
 
 ## Kameo Launcher
 
-The launcher (`launcher/`) uses SDL 3, Dear ImGui, toml++ and stb_image's zlib decoder from the SDK (below), and
-JSON for Modern C++ from the SDK's inja (https://github.com/nlohmann/json, Copyright 2013-2023 Niels Lohmann, MIT;
+The launcher (the RecompLauncher submodule, `recomp_launcher/`, and this game's `launcher/`) uses SDL 3, Dear ImGui,
+toml++ and stb_image's zlib decoder from the SDK (below), and JSON for Modern C++ from the SDK's inja
+(https://github.com/nlohmann/json, Copyright 2013-2023 Niels Lohmann, MIT;
 `thirdparty/rexglue-sdk/thirdparty/inja/third_party/include/nlohmann/LICENSE.MIT`) to read GitHub's answer about
 updates. It also contains:
-- **Barlow and Barlow Condensed** (`launcher/fonts/`, embedded in `Kameo Launcher.exe`): https://github.com/jpt/barlow,
-  Copyright 2017 The Barlow Project Authors, SIL Open Font License 1.1 (`launcher/fonts/OFL.txt`). The TTF files are
-  the ones Google Fonts distributes, unchanged.
-- **nanosvg** (`launcher/thirdparty/nanosvg/`): https://github.com/memononen/nanosvg, Copyright (c) 2013-14
-  Mikko Mononen, zlib license (`launcher/thirdparty/nanosvg/LICENSE.txt`). It draws the launcher's icons and
+- **Barlow and Barlow Condensed** (`recomp_launcher/fonts/`, embedded in `Kameo Launcher.exe`):
+  https://github.com/jpt/barlow, Copyright 2017 The Barlow Project Authors, SIL Open Font License 1.1
+  (`recomp_launcher/fonts/OFL.txt`). The TTF files are the ones Google Fonts distributes, unchanged.
+- **nanosvg** (`recomp_launcher/thirdparty/nanosvg/`): https://github.com/memononen/nanosvg, Copyright (c) 2013-14
+  Mikko Mononen, zlib license (`recomp_launcher/thirdparty/nanosvg/LICENSE.txt`). It draws the launcher's icons and
   art.
 
 ## ReXGlue SDK
