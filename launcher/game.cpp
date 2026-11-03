@@ -12,6 +12,7 @@ const GameTexts& GameTextsFor(uint32_t language) {
       "Before the adventure begins the game has to be installed. The launcher extracts its files from your Xbox 360 "
       "ISO; you only need to do it once.",
       {"Cinematics without black bars", "No bars above and below the in-engine cinematics."},
+      {},
       "The kingdom awaits!",
       "The game was installed. Begin the adventure now, or first review the video, graphics and control settings; you "
       "can always change them in the launcher."};
@@ -26,6 +27,7 @@ const GameTexts& GameTextsFor(uint32_t language) {
       "Antes de comenzar la aventura hay que instalar el juego. El launcher extrae los archivos desde tu ISO de Xbox "
       "360; solo tendrás que hacerlo una vez.",
       {"Cinemáticas sin barras negras", "Sin barras arriba y abajo de la imagen."},
+      {},
       "¡El reino te espera!",
       "El juego se instaló correctamente. Puedes comenzar la aventura ya o revisar primero los ajustes de video, "
       "gráficos y controles; siempre podrás cambiarlos desde el launcher."};

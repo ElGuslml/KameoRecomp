@@ -7,10 +7,12 @@ folder.
 
 ## NativeXRenderer
 
-The renderer, [NativeXRenderer](https://github.com/ElGuslml/NativeXRenderer) (`native_x_renderer/`, a
-submodule), is MIT. It brings DiligentCore (Apache 2.0), SPIRV-Cross (Apache 2.0), volk (MIT), NVIDIA DLSS
-and NGX (NVIDIA RTX SDKs License; this game offers no DLSS mode, so `nvngx_dlss.dll` is not shipped) and SMAA
-(MIT-style). Their notices: [`native_x_renderer/THIRD_PARTY_NOTICES.md`](https://github.com/ElGuslml/NativeXRenderer/blob/main/THIRD_PARTY_NOTICES.md).
+The renderer, [NativeXRenderer](https://github.com/ElGuslml/NativeXRenderer) (`native_x_renderer/`, a submodule),
+is MIT. It brings DiligentCore (Apache 2.0), SPIRV-Cross (Apache 2.0), volk (MIT), NVIDIA DLSS and NGX (NVIDIA RTX
+SDKs License; this game offers no DLSS mode, so `nvngx_dlss.dll` is not shipped), SMAA (MIT-style), AMD FidelityFX
+FSR 1 and CAS and NVIDIA Image Scaling (MIT), and the AMD FidelityFX API (MIT; `amd_fidelityfx_vk.dll` is shipped
+only when the game offers AMD FSR 3.1). Their notices:
+[`native_x_renderer/THIRD_PARTY_NOTICES.md`](https://github.com/ElGuslml/NativeXRenderer/blob/main/THIRD_PARTY_NOTICES.md).
 
 NVIDIA and DLSS are trademarks or registered trademarks of NVIDIA Corporation in the U.S. and other countries.
 
@@ -21,9 +23,12 @@ toml++ and stb_image's zlib decoder from the SDK (below), and JSON for Modern C+
 (https://github.com/nlohmann/json, Copyright 2013-2023 Niels Lohmann, MIT;
 `thirdparty/rexglue-sdk/thirdparty/inja/third_party/include/nlohmann/LICENSE.MIT`) to read GitHub's answer about
 updates. It also contains:
-- **Barlow and Barlow Condensed** (`recomp_launcher/fonts/`, embedded in `Kameo Launcher.exe`):
-  https://github.com/jpt/barlow, Copyright 2017 The Barlow Project Authors, SIL Open Font License 1.1
-  (`recomp_launcher/fonts/OFL.txt`). The TTF files are the ones Google Fonts distributes, unchanged.
+- **Oswald** (`recomp_launcher/fonts/Oswald-*.ttf`, embedded in `Kameo Launcher.exe`: the titles):
+  https://github.com/googlefonts/OswaldFont, Copyright 2016 The Oswald Project Authors, SIL Open Font License 1.1
+  (`recomp_launcher/fonts/OFL-Oswald.txt`). Static instances (weights 500, 600, 700) of Google Fonts' variable font.
+- **Source Sans 3** (`recomp_launcher/fonts/SourceSans3-*.ttf`, embedded likewise: the text):
+  https://github.com/adobe-fonts/source-sans, Copyright 2010-2020 Adobe, with Reserved Font Name 'Source', SIL Open
+  Font License 1.1 (`recomp_launcher/fonts/OFL-SourceSans3.txt`). Adobe's own TTF files of release 3.052R, unmodified.
 - **nanosvg** (`recomp_launcher/thirdparty/nanosvg/`): https://github.com/memononen/nanosvg, Copyright (c) 2013-14
   Mikko Mononen, zlib license (`recomp_launcher/thirdparty/nanosvg/LICENSE.txt`). It draws the launcher's icons and
   art.

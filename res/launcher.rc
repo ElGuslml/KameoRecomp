@@ -9,14 +9,14 @@
 1 ICON "icon.ico"
 #endif
 
-IDR_FONT_REGULAR RCDATA "fonts/Barlow-Regular.ttf"
-IDR_FONT_MEDIUM RCDATA "fonts/Barlow-Medium.ttf"
-IDR_FONT_SEMIBOLD RCDATA "fonts/Barlow-SemiBold.ttf"
-IDR_FONT_BOLD RCDATA "fonts/Barlow-Bold.ttf"
-IDR_FONT_CONDENSED_SEMIBOLD RCDATA "fonts/BarlowCondensed-SemiBold.ttf"
-IDR_FONT_CONDENSED_BOLD RCDATA "fonts/BarlowCondensed-Bold.ttf"
-IDR_ART_HERO RCDATA "art/hero.svg"
-IDR_ART_INSTALL RCDATA "art/install.svg"
+IDR_FONT_REGULAR RCDATA "fonts/SourceSans3-Regular.ttf"
+IDR_FONT_MEDIUM RCDATA "fonts/SourceSans3-Medium.ttf"
+IDR_FONT_SEMIBOLD RCDATA "fonts/SourceSans3-SemiBold.ttf"
+IDR_FONT_BOLD RCDATA "fonts/SourceSans3-Bold.ttf"
+IDR_FONT_DISPLAY_MEDIUM RCDATA "fonts/Oswald-Medium.ttf"
+IDR_FONT_DISPLAY_SEMIBOLD RCDATA "fonts/Oswald-SemiBold.ttf"
+IDR_FONT_DISPLAY_BOLD RCDATA "fonts/Oswald-Bold.ttf"
+IDR_ART_BACKGROUND RCDATA "art/background.svg"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION RECOMP_LAUNCHER_VERSION

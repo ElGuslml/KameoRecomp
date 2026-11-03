@@ -32,29 +32,24 @@ inline constexpr const char* kVersion = KAMEORECOMP_VERSION_STR;
 
 // --- The look ---
 
-// The title the art and the sidebar show: a small line above, the name below.
+// The title the Play page shows over the art: a small line above, the name below.
 inline constexpr const char* kArtKicker = "ELEMENTS OF POWER";
 inline constexpr const char* kArtTitle = "KAMEO";
-// The mark in the logo beside it (the sidebar, the first run): an icon's SVG paths in a 24-unit box, stroked as the
-// launcher's icons are (ui.cpp). A leaf (Gustavo's mockup).
-inline constexpr const char* kBrandIcon = "<path d='M5 19c0-8 6-14 14-14 0 8-6 14-14 14z'/><path d='M5 19l8-8'/>";
-// Where the Play page crops its art (launcher\art\hero.svg) in a window of another shape: the point kept in view,
-// as fractions of the art's width and height (the elemental orb, at 470, 210 of 1000 x 524).
-inline constexpr float kHeroFocusX = 0.47f;
-inline constexpr float kHeroFocusY = 0.40f;
+// The mark in the header's logo while the game's icon is unknown: an icon's SVG paths in a 24-unit box, stroked as the
+// launcher's icons are (ui.cpp).
+inline constexpr const char* kBrandIcon =
+    "<path d='M5 19c0-8 6-14 14-14 0 8-6 14-14 14z'/><path d='M5 19l8-8'/>";
+// The header's name beside the logo, on two lines (in capitals); an empty title: the art's (kArtTitle) alone.
+inline constexpr const char* kBrandTitle = "Kameo";
+inline constexpr const char* kBrandSubtitle = "Elements of Power";
+// Where the art under the pages (launcher\art\background.svg, 1280 x 760: the template's in Kameo's colors, until the
+// game has its own) is cropped in a window of another shape: the point kept in view, as fractions of its width and
+// height.
+inline constexpr float kArtFocusX = 0.75f;
+inline constexpr float kArtFocusY = 0.6f;
 // The logo's mark on a disc instead of a rounded square.
 inline constexpr bool kBrandRound = true;
-// The first run's art panel: the game's name in a dark card over the art, with the tagline, instead of straight on
-// the art with the tagline at its foot.
-inline constexpr bool kInstallTitleCard = true;
-// The sidebar's name beside the logo, and the words before "LAUNCHER" under it; null: the art's title (kArtTitle) and
-// "LAUNCHER" alone.
-inline constexpr const char* kSidebarTitle = nullptr;
-inline constexpr const char* kSidebarSubtitle = nullptr;
-// The Play page's name and buttons in a black bar across the foot of the art, under a line of accent (the first run's
-// title card gets the same line), instead of straight on the art.
-inline constexpr bool kHeroTitleBar = false;
-// The titles in capitals: the pages', the Play page's name, the sidebar's and the first run's.
+// The titles in capitals (the game's own texts that the launcher shows as titles).
 inline constexpr bool kUppercaseTitles = false;
 
 // --- The disc ---
@@ -87,6 +82,11 @@ inline constexpr const char* kReleasesPage = "https://github.com/ElGuslml/KameoR
 inline constexpr bool kHasNativeXRenderer = true;
 // The renderer chosen until the player picks one (an options file without native_x_renderer): NativeXRenderer.
 inline constexpr bool kNativeXRendererDefault = true;
+// The upscaling row's AMD FSR 3.1 and NVIDIA DLSS (NativeXRenderer's D47-D49, D116: the main 3D view rebuilt from
+// several frames; RecompLauncher 3.6, 3.9): only for a game whose hooks mark its views (native_x_renderer::BeginView
+// and EndViewGeometry, as POTCAWE's). Without them DLSS never runs; false: FSR 1 and
+// NIS only.
+inline constexpr bool kHasDlaa = false;
 
 // The Graphics page's shadow quality row: NativeXRenderer draws the game's shadow maps at a scale of their own
 // (native_x_renderer_shadow_scale, its D92): at least twice or four times the game's resolution. Only where it
@@ -126,13 +126,22 @@ inline constexpr std::array<Language, 9> kLanguages{{
     {8, "繁體中文", nullptr, nullptr},
 }};
 
-// Switches of the game's own (src/), each a boolean cvar with a row in the Game page; their titles and hints are
+// Switches of the game's own (src/), each a boolean cvar with a row in the Settings tab; their titles and hints are
 // game.cpp's (GameTexts::toggles, in this order): the in-engine cinematics without their black bars
 // (src/cinematics.cpp).
 inline constexpr std::array<Toggle, 1> kToggles{{{"kameo_no_letterbox", false}}};
 
-// The Settings group has a Game page (page_game.cpp) when the game has a language row or switches.
-inline constexpr bool kHasGamePage = !kLanguages.empty() || !kToggles.empty();
+// Whether some switch is in `group`.
+constexpr bool HasToggles(ToggleGroup group) {
+  for (const Toggle& toggle : kToggles) {
+    if (toggle.group == group) return true;
+  }
+  return false;
+}
+
+// The Settings tab has a Game category (page_settings.cpp) when the game has a language row or switches of its own.
+// Read by RecompLauncher before 3.6 only (from 3.6 the Game category is always there, with the launcher's language).
+inline constexpr bool kHasGamePage = !kLanguages.empty() || HasToggles(ToggleGroup::kGame);
 
 // --- Downloadable content ---
 
@@ -146,6 +155,19 @@ inline constexpr bool kHasDlcPage = false;
 inline constexpr std::array<KeyDefault, 0> kKeyboardDefaults{};
 // The Keyboard page's switch that makes some keys also tap a control (the SDK's mnk_tap_target); "": no switch.
 inline constexpr const char* kKeyboardTapTarget = "";
+// The whammy bar's row on each controller playing guitar (page_controls.cpp, RecompLauncher 3.4): how far the game
+// reads the bar, and its calibration (the SDK's gamepad_whammy_calibration, recomp change 60). False: no such row (a
+// game without a guitar).
+inline constexpr bool kHasWhammy = false;
+
+// --- Singing ---
+
+// The Controls tab's microphone and each controller's part (page_controls.cpp, RecompLauncher 3.1): a recording device
+// of the PC as the game's USB microphone (the SDK's usb_microphone_1, recomp change 55) and a controller playing the
+// game's instrument or singing (the SDK's gamepad_device_subtypes, change 56). False: the game has no microphone.
+inline constexpr bool kHasMicrophones = false;
+// The microphone's gain in dB (usb_microphone_1_gain) until the player changes it, and the Microphone's Reset.
+inline constexpr int kMicrophoneGainDefault = 0;
 
 // --- The controls in the game's words ---
 
@@ -161,6 +183,8 @@ struct GameTexts {
   const char* welcome_text;
   // kToggles' rows: a title and a hint each.
   std::array<const char*, kToggles.size() * 2> toggles;
+  // kToggles' help, the Settings tab's panel for the row in focus; null: the hint.
+  std::array<const char*, kToggles.size()> toggle_help{};
   // The first run's last screen (the game installed), in the game's spirit; null: the launcher's own.
   const char* done_title = nullptr;
   const char* done_text = nullptr;
@@ -169,15 +193,12 @@ struct GameTexts {
   // The first run's extraction screen (while it runs), in the game's spirit; null: the launcher's own.
   const char* extracting_title = nullptr;
   const char* extracting_text = nullptr;
-  // The Gamepad page's name in the sidebar, its title and subtitle; null: the launcher's own ("Gamepad").
-  const char* gamepad_nav = nullptr;
-  const char* gamepad_title = nullptr;
-  const char* gamepad_subtitle = nullptr;
-  // The Keyboard and Gamepad pages' first column with GameControlsFor's functions; null: the launcher's own.
-  const char* functions_column = nullptr;
-  // The Keyboard page's switch for kKeyboardTapTarget.
+  // The Controls tab's keyboard switch for kKeyboardTapTarget, and its tip in the help.
   const char* keyboard_tap_title = nullptr;
   const char* keyboard_tap_hint = nullptr;
+  // kHasMicrophones: a controller's two parts, the game's instrument and the singer's; null: the launcher's words.
+  const char* part_instrument = nullptr;
+  const char* part_vocals = nullptr;
 };
 // In the language of the launcher's texts (an XLanguage); missing ones fall back to English.
 const GameTexts& GameTextsFor(uint32_t language);

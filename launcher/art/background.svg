@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760">
+<!-- The art under every page: the template's placeholder, an abstract disc. Replace it with the game's own, 1280 x 760
+     (drawn with preserveAspectRatio "slice", cropped around game.h's kArtFocusX/Y; nanosvg: no <use>, no CSS). The
+     pages darken it, all but Play; keep the left side quiet, where the Play page writes the game's name. -->
+<defs>
+  <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#141C2B"/>
+    <stop offset="1" stop-color="#0B110F"/>
+  </linearGradient>
+  <radialGradient id="glow" cx="0.76" cy="0.58" r="0.55">
+    <stop offset="0" stop-color="#2B4266" stop-opacity="0.85"/>
+    <stop offset="1" stop-color="#2B4266" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="disc" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="#3A4F72"/>
+    <stop offset="0.7" stop-color="#22324B"/>
+    <stop offset="1" stop-color="#18243A"/>
+  </radialGradient>
+</defs>
+<rect width="1280" height="760" fill="url(#sky)"/>
+<rect width="1280" height="760" fill="url(#glow)"/>
+<circle cx="980" cy="470" r="260" fill="url(#disc)"/>
+<circle cx="980" cy="470" r="250" fill="none" stroke="#86A8FF" stroke-opacity="0.35" stroke-width="3"/>
+<circle cx="980" cy="470" r="200" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="2"/>
+<circle cx="980" cy="470" r="150" fill="none" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="2"/>
+<circle cx="980" cy="470" r="100" fill="none" stroke="#FFFFFF" stroke-opacity="0.08" stroke-width="2"/>
+<circle cx="980" cy="470" r="46" fill="#0B110F"/>
+<circle cx="980" cy="470" r="46" fill="none" stroke="#86A8FF" stroke-opacity="0.6" stroke-width="4"/>
+<path d="M980 220 A250 250 0 0 1 1230 470" fill="none" stroke="#B4C8FF" stroke-opacity="0.55" stroke-width="6" stroke-linecap="round"/>
+</svg>
