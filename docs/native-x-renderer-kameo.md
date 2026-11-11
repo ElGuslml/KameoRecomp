@@ -367,6 +367,16 @@ GPU use and power at the level, standing (walking gives the same within 2 %):
 
 The CSV and the scripts: `local_docs/11-performance-ab.md` (not published).
 
+### CPU per draw at high frame rates (2026-11-11, library D139)
+
+The troll army near the horse (~7,000 draws a frame) dropped to 105 FPS at 120: both of the library's threads near a
+full core, the GPU at half. D139 (and the SDK's recomp change 82) took the renderer's CPU per draw from 1.32 to 1.13 us
+at the grass spot of the Enchanted Kingdom and from 1.58 to 1.32 us at the trolls' area; Gustavo then held 120 FPS
+there in ultrawide. At 160 FPS in ultrawide (the wider view draws 6,000-6,500 times a frame in those areas, 16:9 about
+5,000) the dense areas run at 130-150 FPS: the game's render thread is saturated (two thirds the game's code, about 15 %
+its D3D library, a third the library's capture) and the renderer thread needs 6.0-6.5 ms of the 6.25. The GPU has room.
+What could lower both: the library's `performance.md`.
+
 ## 9. Open
 
 - **More of the game**: only the first level's start, the first cinematic, the menus and two videos have been seen
