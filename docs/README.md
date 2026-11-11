@@ -14,4 +14,5 @@ To build the project and work on it: [Building and developing](development.md).
 | [Quitting from the title screen](quit-prompt.md) | Working: B on "PRESS START" asks whether to quit (A quits, B cancels) |
 | [CPU usage: one core at 100 %](cpu-usage.md) | Fixed: the game's waits for the GPU and the video reader no longer spin |
 | [Overexposed image near the sun](light-glows.md) | Fixed: the light glows' occlusion quads are no longer counted (both renderers) |
+| [Dark edges and see-through grass](grass-edges.md) | Fixed: alpha to coverage dithers in 2x2 as on the console (NativeXRenderer D138) |
 | [NativeXRenderer in Kameo](native-x-renderer-kameo.md) | The default renderer since 2026-10-21 (Xenos stays in the launcher's "Renderer" row) |
