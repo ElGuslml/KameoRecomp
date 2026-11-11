@@ -377,6 +377,11 @@ there in ultrawide. At 160 FPS in ultrawide (the wider view draws 6,000-6,500 ti
 its D3D library, a third the library's capture) and the renderer thread needs 6.0-6.5 ms of the 6.25. The GPU has room.
 What could lower both: the library's `performance.md`.
 
+Library D140 (same day) lightened the capture on the game's render thread: the ~24,000 setter calls a frame in those
+areas followed lean, the draws published without a lock or a fence, the shadow's rarely changed state compared once.
+About -90 ns a draw of that thread, -0.5 ms a frame at ~5,900 draws; with the lean setters alone Gustavo's dense area
+ran at 142-153 FPS instead of 131-150.
+
 ## 9. Open
 
 - **More of the game**: only the first level's start, the first cinematic, the menus and two videos have been seen
