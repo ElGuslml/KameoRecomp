@@ -19,7 +19,8 @@
 // Other code steps by a fixed amount per frame, made for 30 FPS, so it runs twice as fast at 60:
 // Kameo's blue bar, drained by an elemental's ability (Pummel Weed's RT + LT), lasted 12 s at 30 FPS
 // and 6 s at 60 (Gustavo). Its hook scales the per-frame step by the frame's duration in 30 Hz
-// frames, dt * 30, so it keeps the console's speed at any frame rate.
+// frames, dt * 30, so it keeps the console's speed at any frame rate. The same for the blue bar's other drains (the
+// stat setter, below), the lake's texture scroll, and the lake's ripples (a GPU simulation run at 30 steps a second).
 //
 // Above 60 FPS the SDK's vblank runs faster (video_mode_refresh_rate, e.g. 120), and the game reads
 // that rate from XGetVideoMode: sub_820BECA8 stores it at 0x827556C0, and the clock counts the
@@ -34,12 +35,17 @@
 #include <rex/cvar.h>
 #include <rex/logging.h>
 #include <rex/ppc/context.h>
+#include <rex/ppc/func.h>
 #include <rex/system/kernel_state.h>
 #include <rex/system/xmemory.h>
 
+#include <algorithm>
 #include <atomic>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <mutex>
+#include <unordered_map>
 
 REXCVAR_DEFINE_BOOL(kameo_60fps, false, "Kameo",
                     "Present every vblank (60 FPS) instead of every second one (30 FPS, the "
@@ -83,7 +89,10 @@ double Frames30() {
 // D3DRS_PRESENTINTERVAL render state just loaded from the device (0 = default, 1 = one, 2 = two,
 // 4 = three, 0x80000000 = immediate). The same change as Margen67's "60 FPS" Xenia patch (li r10,2
 // -> li r10,1 at 0x820CF93C).
+std::atomic<uint32_t> g_swaps{0};  // Swaps so far: the frame count of the blue bar's drains below
+
 void KameoPresentIntervalHook(PPCRegister& r10) {
+  g_swaps.fetch_add(1, std::memory_order_relaxed);
   if (!REXCVAR_GET(kameo_60fps) || r10.u32 != 2) {
     return;
   }
@@ -119,6 +128,65 @@ void KameoElementalDrainHook(PPCRegister& f0, PPCRegister& f1, PPCRegister& f29)
   f1.f64 = double(float(f0.f64 - f29.f64 * Frames30()));
 }
 
+// [[midasm_hook]] 0x82456D64 and 0x82456D7C (sub_82456B58, the lake's water material update, every frame): before
+// the two calls of sub_82266CB0, which adds f2 to the float at r5 and wraps it, f2 = its per-frame step (0.3 at
+// 0x8205A164 for +48, 0.9 at 0x8206F920 for +52 of the material: the scroll of its texture). The step times dt * 30
+// scrolls it at its 30 FPS speed.
+void KameoFrameStepF2Hook(PPCRegister& f2) {
+  if (!REXCVAR_GET(kameo_60fps) || !REXCVAR_GET(kameo_frame_step_fix)) {
+    return;
+  }
+  f2.f64 = double(float(f2.f64 * Frames30()));
+}
+
+// The lake's ripples. sub_82287C90, called once a frame from the render-event dispatcher (sub_82271BB8), simulates
+// the water's waves on the GPU: in a 512x512 target it draws the disturbances (the waterfall's fall) and runs one
+// propagation step (sub_82309E98 -> sub_8230A010, a full-screen pass over the last result), then resolves the
+// result into the textures the lake samples. One step per frame: at 120 FPS the waves ran four times as fast. The
+// hook runs it at 30 steps a second instead, the console's: a frame that has not gathered 1/30 s since the last
+// step skips the call, and the lake keeps the textures the last step resolved. Its own timer (the periodic drops,
+// dt at 0x82755760 taken from a packed float) gets the time since the last step.
+namespace {
+
+constexpr double kRippleStep = 1.0 / 30.0;
+double g_ripple_phase = 0.0;      // time towards the next step
+double g_ripple_since = 0.0;      // time since the last step ran
+float g_ripple_dt = 0.0f;         // what the running step reads as dt
+bool g_ripple_dt_pending = false;
+
+}  // namespace
+
+// [[midasm_hook]] 0x82272498 (sub_82271BB8: "bl 0x82287c90", the ripples' frame, once a frame), jump_address_on_true:
+// true skips the call.
+bool KameoRippleStepHook() {
+  g_ripple_dt_pending = false;
+  if (!REXCVAR_GET(kameo_60fps) || !REXCVAR_GET(kameo_frame_step_fix)) {
+    g_ripple_phase = g_ripple_since = 0.0;
+    return false;
+  }
+  double dt = Frames30() / 30.0;
+  g_ripple_phase += dt;
+  g_ripple_since += dt;
+  if (g_ripple_phase + 1e-4 < kRippleStep) return true;
+  static std::atomic<bool> logged{false};
+  if (!logged.exchange(true)) {
+    REXLOG_INFO("[framerate] the lake's ripples simulated at 30 steps a second (kameo_frame_step_fix)");
+  }
+  g_ripple_phase = std::min(g_ripple_phase - kRippleStep, kRippleStep);
+  g_ripple_dt = float(g_ripple_since);
+  g_ripple_since = 0.0;
+  g_ripple_dt_pending = true;
+  return false;
+}
+
+// [[midasm_hook]] 0x82287E70 (sub_82287C90): after "lfs f13,22368(r11)", f13 = dt (0x82755760), which the ripples'
+// timer subtracts. A step that ran after skipped frames counts their time too.
+void KameoRippleDtHook(PPCRegister& f13) {
+  if (!g_ripple_dt_pending) return;
+  g_ripple_dt_pending = false;
+  f13.f64 = double(g_ripple_dt);
+}
+
 // [[midasm_hook]] 0x820BEDAC (sub_820BECA8, the engine's video setup): after "lfs f1,100(r1)", f1 =
 // XGetVideoMode's refresh rate, which the code below stores at 0x827556C0, its inverse at
 // 0x827556C4 (the clock's limit is 6 of those) and its whole number at 0x8275D254.
@@ -128,4 +196,55 @@ void KameoRefreshRateHook(PPCRegister& f1) {
   }
   REXLOG_INFO("[framerate] the game is told 60 Hz instead of {} Hz (kameo_refresh_rate_fix)", f1.f64);
   f1.f64 = 60.0;
+}
+
+// The blue bar's other drains. Every elemental's power and the horse's trot take from Kameo's blue bar (stat 0 of
+// its stats, the float at +16) through the stat setter sub_8217EBA8(stats, stat, operation, value): operation 1 sets
+// it to the value the caller computed, the bar minus a cost. Pummel Weed's (sub_823A0990, inground) costs 3 a frame
+// (above); Major Ruin's rolling (sub_823A57C8, spinshellattack) uses the same constant, and the other callers
+// subtract constants (2, 2.5, 3.3, 5, 6, 10 ... 500) or costs read from their data, none of them scaled by dt. A
+// caller that sets the bar on consecutive frames, taking the same amount each time, drains it per frame: its step is
+// scaled by dt * 30, so it keeps its 30 FPS speed. A one-off cost (one frame) and a step that already follows the
+// frame's time (it varies with dt) are left alone. The first frame of a drain keeps its full step.
+namespace {
+
+struct BarDrain {
+  uint32_t swap = 0;  // when this caller last set the bar
+  float step = 0.0f;  // the amount it took then, before scaling
+  bool logged = false;
+};
+std::mutex g_bar_mutex;
+std::unordered_map<uint32_t, BarDrain> g_bar_drains;  // by the caller's return address
+
+}  // namespace
+
+REX_EXTERN(__imp__sub_8217EBA8);
+
+extern "C" REX_FUNC(sub_8217EBA8) {
+  // KameoElementalDrainHook (0x823A0B4C) already scales Pummel Weed's drain, whose call returns to 0x823A0B54.
+  if (ctx.r4.u32 == 0 && ctx.r5.u32 == 1 && ctx.r3.u32 && uint32_t(ctx.lr) != 0x823A0B54 &&
+      REXCVAR_GET(kameo_60fps) && REXCVAR_GET(kameo_frame_step_fix)) {
+    uint32_t bits;
+    std::memcpy(&bits, base + ctx.r3.u32 + 16, 4);
+    bits = __builtin_bswap32(bits);
+    float bar;
+    std::memcpy(&bar, &bits, 4);
+    float step = bar - float(ctx.f1.f64);  // what the caller takes (negative: it gives)
+    uint32_t swap = g_swaps.load(std::memory_order_relaxed);
+    std::lock_guard<std::mutex> lock(g_bar_mutex);
+    BarDrain& d = g_bar_drains[uint32_t(ctx.lr)];
+    bool consecutive = d.swap && swap - d.swap <= 1;
+    bool same_step = step != 0.0f && std::fabs(step - d.step) <= 1e-6f * std::fabs(step);
+    d.swap = swap ? swap : 1;
+    d.step = step;
+    if (consecutive && same_step) {
+      ctx.f1.f64 = double(float(bar - step * Frames30()));
+      if (!d.logged) {
+        d.logged = true;
+        REXLOG_INFO("[framerate] the blue bar drained {} a frame from {:08X}: scaled to its 30 FPS speed "
+                    "(kameo_frame_step_fix)", step, uint32_t(ctx.lr));
+      }
+    }
+  }
+  __imp__sub_8217EBA8(ctx, base);
 }

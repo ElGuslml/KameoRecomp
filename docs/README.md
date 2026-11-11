@@ -8,7 +8,7 @@ To build the project and work on it: [Building and developing](development.md).
 | Note | Status |
 |---|---|
 | [Game language](language.md) | Working: launcher language row, Latin American Spanish through a hook |
-| [Frame rates: 60 FPS and above](frame-rate.md) | Working: 60 FPS with the camera and the blue bar fixed for it; 120 to 240 FPS (experimental) with the game told 60 Hz |
+| [Frame rates: 60 FPS and above](frame-rate.md) | Working: 60 FPS with the camera, the blue bar's drains and the lake fixed for it; 120 to 240 FPS (experimental) with the game told 60 Hz |
 | [Ultrawide displays](ultrawide.md) | Working: wider 3D view, HUD and videos kept 16:9 in the center (both renderers) |
 | [Cinematics without black bars](cinematic-bars.md) | Working: launcher checkbox, at 16:9 and ultrawide |
 | [Quitting from the title screen](quit-prompt.md) | Working: B on "PRESS START" asks whether to quit (A quits, B cancels) |

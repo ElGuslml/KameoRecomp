@@ -21,8 +21,14 @@ for Xenia: the automatic camera following. In X and Z the camera's target is its
 times the frame time, and the camera then moves towards it by a factor that is again proportional to the
 frame time, so the movement per second halves at 60 FPS: the camera lags behind Kameo.
 
-Other code steps by a fixed amount every frame, sized for 30 FPS, so it runs twice as fast at 60. Found so far:
-Kameo's blue bar, drained by an elemental's ability (Pummel Weed's RT + LT), lasted 12 s at 30 FPS and 6 s at 60.
+Other code steps by a fixed amount every frame, sized for 30 FPS, so it runs twice as fast at 60 (four times at
+120). Found so far:
+
+- Kameo's blue bar, drained by an elemental's ability (Pummel Weed's RT + LT), lasted 12 s at 30 FPS and 6 s at 60;
+  the horse's trot drains it the same way, as do other powers (Major Ruin's roll uses the same cost per frame).
+- The waterfall's lake: its texture scrolls by a fixed step each frame, and its ripples are a wave simulation on
+  the GPU that advances one step each frame (it draws the waterfall's disturbance into a texture and propagates the
+  waves from the last frame's result), so the lake "vibrated" faster as the frame rate rose.
 
 Above 60 FPS the emulated vblank runs faster (`video_mode_refresh_rate`, for example 120), and the game reads that
 rate from the video mode at startup. Its clock counts the frame time in vblanks (frame time × refresh rate), and
@@ -31,8 +37,8 @@ animations, Chilla's climb and many timers advance by that count, so at 120 Hz t
 
 ## Fix
 
-`src/framerate.cpp` with four `[[midasm_hook]]`s in `kameo_functions.toml`, the first three active only with
-`kameo_60fps`:
+`src/framerate.cpp` with `[[midasm_hook]]`s in `kameo_functions.toml` and a replacement of the stat setter, all but the
+refresh rate's active only with `kameo_60fps`:
 
 - In the Direct3D swap routine, right after the present interval is read, 2 becomes 1. This is what
   Margen67's "60 FPS" Xenia patch does (`li r10,2` → `li r10,1` at `0x820CF93C`).
@@ -41,6 +47,16 @@ animations, Chilla's climb and many timers advance by that count, so at 120 Hz t
   `0x82440FB8`). At exactly 30 FPS both are the original values; Y (height) is unchanged, as in the patch.
 - In the ability that drains the blue bar (`sub_823A0990`, every frame), the cost per frame (3) is multiplied by
   the frame time × 30, so the bar drains at its 30 FPS speed (90 per second) at any frame rate.
+- The blue bar's other drains: the routine that sets a stat (`sub_8217EBA8`) is replaced by one that, when the same
+  code sets the blue bar on consecutive frames and takes the same amount each time, scales that amount by the frame
+  time × 30. One-off costs (a single frame) and amounts that already follow the frame time are left as they are. It
+  covers every power and the horse without listing them; the log names each drain it scales once ("the blue bar
+  drained 2 a frame from ..."), the horse's in `sub_821B7D98`.
+- The lake's texture scroll (`sub_82456B58`, the water material's update): its two steps per frame (0.3 and 0.9)
+  are multiplied by the frame time × 30.
+- The lake's ripples (`sub_82287C90`): the simulation runs at 30 steps a second, the console's rate, whatever the
+  frame rate: a frame that has not gathered 1/30 s since the last step skips it, and the lake keeps the last
+  result. Its timer for the periodic drops gets the time since the last step.
 - In the engine's video setup (`sub_820BECA8`), a refresh rate above 60 Hz is reported to the game as 60 Hz, the
   console's, so the clock counts 60 Hz vblanks at any vblank rate.
 
@@ -68,7 +84,7 @@ to 30 FPS in the launcher.
 | `kameo_frame_rate` | `0` | 30, 60, 120, 144, 160, 165 or 240: sets the two below at startup; `0` = they decide |
 | `kameo_60fps` | `false` | `true` presents every vblank (60 FPS); `false` keeps the original 30 FPS |
 | `kameo_camera_fix` | `true` | With `kameo_60fps`: camera following at its 30 FPS speed; `false` = original code |
-| `kameo_frame_step_fix` | `true` | With `kameo_60fps`: code stepped per frame (the blue bar) at its 30 FPS speed; `false` = original code |
+| `kameo_frame_step_fix` | `true` | With `kameo_60fps`: code stepped per frame (the blue bar's drains, the lake's scroll and ripples) at its 30 FPS speed; `false` = original code |
 | `kameo_refresh_rate_fix` | `true` | With the vblank above 60 Hz: the game is told 60 Hz; `false` = the SDK's rate (animations and timers too fast) |
 | `video_mode_refresh_rate` | `60` | The emulated vblank (SDK); `120` with `kameo_60fps` gives 120 FPS |
 

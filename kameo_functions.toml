@@ -97,6 +97,32 @@ address = 0x823A0B4C   # li r4,0 (after fsubs f1,f0,f29: the bar minus the cost)
 name = "KameoElementalDrainHook"
 registers = ["f0", "f1", "f29"]
 
+# The lake's texture scroll at 60 FPS (src/framerate.cpp): sub_82456B58, the water material's update, advances the
+# scroll at +48 and +52 by 0.3 and 0.9 a frame through sub_82266CB0 (add and wrap); the hook scales each step by the
+# frame's duration in 30 Hz frames when kameo_60fps is on. Found with the memory probe's F6 at the waterfall's lake.
+[[midasm_hook]]
+address = 0x82456D64   # bl 0x82266cb0 (f2 = 0.3, the scroll step of +48)
+name = "KameoFrameStepF2Hook"
+registers = ["f2"]
+
+[[midasm_hook]]
+address = 0x82456D7C   # bl 0x82266cb0 (f2 = 0.9, the scroll step of +52)
+name = "KameoFrameStepF2Hook"
+registers = ["f2"]
+
+# The lake's ripples at 60 FPS and above (src/framerate.cpp): sub_82287C90 runs one step of the waves' GPU simulation
+# per frame; the first hook skips the call until 1/30 s has gathered since the last step, the second gives the step
+# that runs the time since the last one where it reads dt (its drops' timer).
+[[midasm_hook]]
+address = 0x82272498   # bl 0x82287c90 (sub_82271BB8, the render-event dispatcher)
+name = "KameoRippleStepHook"
+jump_address_on_true = 0x8227249C
+
+[[midasm_hook]]
+address = 0x82287E70   # lis r11,-32248 (after lfs f13,22368(r11): dt)
+name = "KameoRippleDtHook"
+registers = ["f13"]
+
 # Language (src/language.cpp): sub_820B4F08 turns Spanish into the game's Latin American Spanish (10,
 # the "Mexican" folder) only on a North American console; the hook reports that region for Spanish
 # when kameo_latin_american_spanish is on (the SDK's XGetGameRegion returns 0xFFFF).
